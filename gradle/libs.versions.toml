@@ -1,27 +1,20 @@
 [versions]
 agp = "8.10.1"
 kotlin = "2.0.21"
-coreKtx = "1.16.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
-appcompat = "1.7.1"
-material3 = "1.12.0"
-material3_compose = "1.2.1"
-retrofit = "2.9.0"
-gsonConverter = "2.9.0"
-room = "2.6.1"
-gson = "2.10.1"
-navigationComposeJvmstubs = "2.9.0"
-androidxNavigation = "2.7.7"
 lifecycleRuntimeKtx = "2.9.0"
 activityCompose = "1.10.1"
 composeBom = "2024.09.00"
+room = "2.6.1"
 kotlinx-coroutines = "1.7.3"
 lifecycleCompose = "2.7.0"
+gson = "2.10.1"
 maps-compose = "2.11.4"
 play-services-maps = "18.2.0"
 javaxInject = "1"
+hilt = "2.48"
 ksp = "2.0.21-1.0.21"
 androidxHealthServices = "1.1.0-alpha05"
 androidxCoreKtx = "1.9.0"
@@ -33,27 +26,34 @@ datastoreCoreAndroid = "1.1.7"
 firebaseBom = "33.0.0"
 playServicesAuth = "21.0.0"
 androidxLifecycle = "2.7.0"
+androidxDataStore = "1.0.0"
 googleServicesPlugin = "4.4.1"
+navigationComposeJvmstubs = "2.9.0"
+androidxNavigation = "2.7.7"
+credentials = "1.2.0-beta01"
 androidxCredentials = "1.5.0"
 googleid = "1.1.1"
+retrofit = "2.9.0"
+gsonConverter = "2.9.0"
 okhttp = "4.11.0"
 okhttpLoggingInterceptor = "4.11.0"
 firebaseAppcheckKtx = "18.0.0"
 firebaseAppCheckPlayIntegrity = "18.0.0"
 firebase-firestore = "24.10.3"
 firebase-common-ktx = "20.4.3"
-hilt = "2.48"
+material3 = "1.12.0"
+material3_compose = "1.2.1"
 
 
 [libraries]
-hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
-hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
 material3 = { group = "com.google.android.material", name = "material", version.ref = "material3" }
 compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3_compose" }
+
 retrofit-core = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "gsonConverter" }
 okhttp-core = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-loggingInterceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttpLoggingInterceptor" }
+
 androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "androidxCredentials" }
 androidx-credentials-playServicesAuth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "androidxCredentials" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "androidxNavigation" }
@@ -62,6 +62,9 @@ play-services-location = { module = "com.google.android.gms:play-services-locati
 kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutinesPlayServices" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidxCoreKtx" }
 javax-inject = { group = "javax.inject", name = "javax.inject", version.ref = "javaxInject" }
+androidx-health-services-client = { group = "androidx.health", name = "health-services-client", version.ref = "androidxHealthServices" }
+hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
+hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
 maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "maps-compose" }
 play-services-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "play-services-maps" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -114,6 +117,8 @@ google-gms-services = { id = "com.google.gms.google-services", version.ref = "go
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 
 [bundles]
 firebase-auth-bundle = ["firebase-auth"]

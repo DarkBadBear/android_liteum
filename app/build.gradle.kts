@@ -3,11 +3,13 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.hilt) // Hilt 플러그인을 현재 모듈에 적용
     alias(libs.plugins.google.gms.services)
-
+    kotlin("kapt")
 }
+
+
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
@@ -17,6 +19,11 @@ if (localPropertiesFile.exists()) {
 }
 
 
+
+hilt {
+    enableAggregatingTask = false
+}
+
 android {
     namespace = "com.peachspot.smartkofarm"
     compileSdk = 35
@@ -25,7 +32,7 @@ android {
         applicationId = "com.peachspot.smartkofarm"
         minSdk = 33
         targetSdk = 35
-        versionCode = 1
+        versionCode = 2
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["MAPS_API_KEY"] =
@@ -34,19 +41,29 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            // Enables resource shrinking.
+            isShrinkResources = true
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = "11"
+    }
+
+    buildFeatures {
+        buildConfig = true
+        compose = true
     }
 }
 
@@ -68,8 +85,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.kotlinxCoroutinesCore)
 
-
-
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
     implementation(libs.javax.inject)
 
     implementation(libs.androidx.core.ktx)
@@ -84,6 +101,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
 
 
+
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.playServicesAuth)
     implementation(libs.googleid)
@@ -95,21 +113,32 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.material.icons)
     implementation(libs.compose.runtime)
     implementation(libs.compose.runtime.saveable)
+
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.converter.gson)
+
     implementation(libs.room)
     implementation(libs.roomKtx)
+    kapt(libs.roomCompiler)
+
     implementation(libs.material3)
     implementation(libs.compose.material3)
+
     implementation(libs.gson)
+
+    implementation("io.coil-kt:coil-compose:2.6.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(platform(libs.androidx.compose.bom))
+
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
+

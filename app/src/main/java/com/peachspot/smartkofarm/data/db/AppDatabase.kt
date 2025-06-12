@@ -14,9 +14,9 @@ import androidx.room.TypeConverters
 @Database(
     entities = [
         FarmLogs::class,
-
+        NotificationEntity::class
     ],
-    version = 1, // 실제 데이터베이스 버전에 맞게 수정
+    version = 5, // 실제 데이터베이스 버전에 맞게 수정
     exportSchema = false
 )
 // AppDatabase 클래스를 public으로 변경합니다. (Kotlin에서 abstract 클래스는 기본적으로 open 입니다)
@@ -28,7 +28,7 @@ public abstract class AppDatabase : RoomDatabase() {
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
-        private const val DATABASE_NAME = "oroogi_database"
+        private const val DATABASE_NAME = "smartkofarm_database"
 
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
