@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">전설의 농부</string>
+    <string name="tab_label_building">홈</string>
+    <string name="default_notification_channel_id">smartkofarm_ch_02</string>
+    <string name="default_notification_channel_name">전설의농부</string>
+    <string name="default_notification_channel_description">알림</string>
+    <string name="default_notification_message_body">메세지</string>
+    <string name="screen_title_building">홈 스크린</string>
+    <string name="update_available_title">업데이트 알림</string>
+    <string name="update_button">업데이트</string>
+    <string name="later_button">나중에</string>
+    <string name="exitDialogTitle">서비스 안내</string>
+    <string name="exitDialogMent">서비스가 점검중입니다. 다음에 다시 시도해주세요.</string>
+    <string name="default_update_message">새로운 버전이 출시되었습니다. 업데이트하시겠습니까?</string>
+</resources>

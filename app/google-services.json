@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "666857106516",
+    "project_id": "smartkofarm",
+    "storage_bucket": "smartkofarm.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:666857106516:android:3a364663d82e02729411c1",
+        "android_client_info": {
+          "package_name": "com.peachspot.smartkofarm"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFvaGnPfK3PgdiLwejrvTnJ1p0ChgNAPs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
