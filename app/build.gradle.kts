@@ -77,11 +77,11 @@ dependencies {
     implementation(libs.firebase.config)
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.messaging)
-
+    implementation(libs.accompanist.swiperefresh)
     implementation(platform(libs.androidx.compose.bom))
-
+    implementation(libs.androidx.compose.material)  ///
     implementation(libs.accompanist.permissions)
-
+    implementation(libs.androidx.swiperefreshlayout)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.kotlinxCoroutinesCore)
 

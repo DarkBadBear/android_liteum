@@ -29,6 +29,7 @@ fun MyAppTopBar(
     onNotificationClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+
     val view = LocalView.current
     TopAppBar(
         title = { Text(text = title) },

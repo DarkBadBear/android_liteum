@@ -5,11 +5,17 @@
     <string name="default_notification_channel_name">전설의농부</string>
     <string name="default_notification_channel_description">알림</string>
     <string name="default_notification_message_body">메세지</string>
-    <string name="screen_title_building">홈 스크린</string>
+    <string name="screen_title_building">전설의 농부</string>
     <string name="update_available_title">업데이트 알림</string>
     <string name="update_button">업데이트</string>
     <string name="later_button">나중에</string>
     <string name="exitDialogTitle">서비스 안내</string>
     <string name="exitDialogMent">서비스가 점검중입니다. 다음에 다시 시도해주세요.</string>
     <string name="default_update_message">새로운 버전이 출시되었습니다. 업데이트하시겠습니까?</string>
+    <string name="notifications_screen_title">알림</string>
+    <string name="navigate_back">뒤로가기</string>
+    <string name="clear_all_notifications">삭제</string>
+    <string name="no_notifications_available">받은 알림이 없습니다.</string>
+    <string name="notification_item_image_content_desc">ㅇ_ㅇ</string>
+    <string name="mountain_icon_content_description">아이템</string>
 </resources>
