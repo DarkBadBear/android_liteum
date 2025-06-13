@@ -153,6 +153,17 @@ fun HomeScreen(
             AndroidView(
                 factory = { ctx ->
                     SwipeRefreshLayout(ctx).apply {
+
+                        webView.settings.apply {
+                            javaScriptEnabled = true
+                            domStorageEnabled = true
+                            cacheMode = WebSettings.LOAD_NO_CACHE
+                            builtInZoomControls = true
+                            displayZoomControls = false // 확대/축소 버튼 숨기기
+                            useWideViewPort = true
+                            loadWithOverviewMode = true
+                        }
+
                         setOnRefreshListener {
                             isRefreshing = true
                             webView.reload()
@@ -282,6 +293,7 @@ private fun isPackageInstalled(packageName: String?, packageManager: PackageMana
 }
 
 private fun isSameDomain(currentUrl: String?, newUrl: String?): Boolean {
+
     return try {
         val currentUri = URI(currentUrl ?: "")
         val newUri = URI(newUrl ?: "")
