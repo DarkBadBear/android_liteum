@@ -57,7 +57,6 @@ fun MainScreen() {
 //        BottomNavigationItem(R.string.tab_label_profile, R.drawable.ic_profile, "profile")
     )
 
-
     val application = LocalContext.current.applicationContext as Application
     val database = remember { AppDatabase.getInstance(application) } // remember for stability
     val userPreferencesRepository = remember { UserPreferencesRepository(application) } // remember
@@ -76,7 +75,7 @@ fun MainScreen() {
     Scaffold(
         bottomBar = {
             NavigationBar(
-                containerColor = Color(0xFFf2f3f9)  ///MaterialTheme.colorScheme.surface
+                containerColor = Color(0xFFe1e1e1)   ///MaterialTheme.colorScheme.surface
             ) {
                 navItems.forEachIndexed { index, item ->
                     NavigationBarItem(
@@ -113,7 +112,7 @@ fun MainScreen() {
                 }
             }
             composable("notification_screen_route") {
-             //   NotificationScreen(onNavigateBack = { navController.popBackStack() })
+                NotificationScreen(onNavigateBack = { navController.popBackStack() })
             }
 
         }

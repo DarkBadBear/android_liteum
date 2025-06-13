@@ -43,9 +43,17 @@ firebase-firestore = "24.10.3"
 firebase-common-ktx = "20.4.3"
 material3 = "1.12.0"
 material3_compose = "1.2.1"
-
+accompanist = "0.34.0"
+composeMaterial = "1.6.8"
+swiperefresh = "1.1.0"
 
 [libraries]
+androidx-swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "swiperefreshlayout", version.ref = "swiperefresh" }
+androidx-compose-material = { group = "androidx.compose.material", name = "material", version.ref = "composeMaterial" }
+accompanist-swiperefresh = { group = "com.google.accompanist", name = "accompanist-swiperefresh", version.ref = "accompanist" }
+# 또는 버전을 직접 명시하려면:
+#
+
 material3 = { group = "com.google.android.material", name = "material", version.ref = "material3" }
 compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3_compose" }
 
