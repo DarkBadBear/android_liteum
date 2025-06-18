@@ -1,6 +1,7 @@
 package com.peachspot.legendkofarm
 
 import android.Manifest
+import android.app.Activity
 import android.app.Application
 import android.content.ActivityNotFoundException
 import android.content.BroadcastReceiver
@@ -11,11 +12,14 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
+import android.webkit.ValueCallback
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
@@ -29,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.compose.rememberNavController
 import com.google.android.gms.tasks.OnCompleteListener
@@ -47,6 +52,7 @@ import com.peachspot.legendkofarm.ui.theme.legendkofarmiTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.File
 
 ///@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -62,6 +68,10 @@ class MainActivity : ComponentActivity() {
     private var showForegroundNotificationDialogState by mutableStateOf(false)
     private var foregroundNotificationDataState by mutableStateOf<Map<String, String>?>(null)
 
+    private var filePathCallback: ValueCallback<Array<Uri>>? = null
+    private var imageUri: Uri? = null
+    private val FILE_REQUEST_CODE = 1001
+    private lateinit var fileChooserLauncher: ActivityResultLauncher<Intent>
 
     data class UpdateInfo(
         val isForceUpdate: Boolean,
@@ -109,6 +119,23 @@ class MainActivity : ComponentActivity() {
             //setupRemoteConfig()
 
 
+
+
+        fileChooserLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            //val resultUri = result.data?.data
+            val resultUri = result.data?.data ?: imageUri // <-- 중요!
+            if (result.resultCode == RESULT_OK && resultUri != null) {
+                filePathCallback?.onReceiveValue(arrayOf(resultUri))
+            } else {
+                filePathCallback?.onReceiveValue(null)
+            }
+            filePathCallback = null
+        }
+
+
+
+
+
         val onBackPressedCallback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (System.currentTimeMillis() - backPressedTime < exitToastDuration) {
@@ -130,7 +157,21 @@ class MainActivity : ComponentActivity() {
                 val application = LocalContext.current.applicationContext as Application
 
 
-                MainScreen() // MainScreen을 먼저 표시하도록 순서 유지
+                MainScreen(
+                    onFileChooserRequest = { callback, intent ->
+                        filePathCallback = callback
+                        imageUri = createImageUri() // 여기서 카메라 저장 URI 생성
+
+                        // 카메라+갤러리 선택용 인텐트를 새로 만듦
+                        imageUri?.let { uri ->
+                            val chooserIntent = createCameraGalleryChooserIntent(this, uri)
+                            fileChooserLauncher.launch(chooserIntent)
+                        } ?: run {
+                            // imageUri가 null일 때 처리 (예: 에러 로그, 기본 intent 사용 등)
+                            fileChooserLauncher.launch(intent)
+                        }
+                    }
+                )
 
                 // 서비스 중지 다이얼로그
                 if (showServiceStoppedDialogState) {
@@ -508,4 +549,32 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+
+
+
+    private fun createImageUri(): Uri {
+        val imageFile = File(cacheDir, "IMG_${System.currentTimeMillis()}.png")
+        return FileProvider.getUriForFile(
+            this,
+            "$packageName.fileprovider",
+            imageFile
+        )
+    }
+    fun createCameraGalleryChooserIntent(context: Context, outputUri: Uri): Intent {
+        val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+            putExtra(MediaStore.EXTRA_OUTPUT, outputUri)
+        }
+
+        val galleryIntent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            type = "image/*"
+        }
+
+        return Intent(Intent.ACTION_CHOOSER).apply {
+            putExtra(Intent.EXTRA_INTENT, galleryIntent)
+            putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(cameraIntent))
+        }
+    }
+
+
 }

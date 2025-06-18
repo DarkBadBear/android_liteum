@@ -1,6 +1,9 @@
 package com.peachspot.legendkofarm.ui.screens
 
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.webkit.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -10,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
+import com.peachspot.legendkofarm.MainActivity
 import com.peachspot.legendkofarm.ui.components.MyAppTopBar
 import com.peachspot.legendkofarm.viewmodel.HomeViewModel
 import com.peachspot.legendkofarm.ui.components.CommonWebView
@@ -22,11 +26,13 @@ import com.peachspot.legendkofarm.R
 fun ExchangeScreen(
     viewModel: HomeViewModel,
     navController: NavController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onFileChooserRequest: (ValueCallback<Array<Uri>>, Intent) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val activity = context as? Activity
 
     var showUrlPopup by remember { mutableStateOf(false) }
     var popupUrl by remember { mutableStateOf<String?>(null) }
@@ -119,7 +125,7 @@ fun ExchangeScreen(
     ) { innerPadding ->
         Box(modifier = modifier.padding(innerPadding).fillMaxSize()) {
             CommonWebView(
-                url = stringResource(R.string.url)+"/exchange",
+                url = "https://urdesk.co.kr/smartkofarmExchange",
                 modifier = modifier
                     //.padding(innerPadding)
                     .fillMaxSize(),
@@ -132,7 +138,8 @@ fun ExchangeScreen(
                     alertMessage = message
                     jsAlertResult = result
                     showAlert = true
-                }
+                },
+                onFileChooserRequest = onFileChooserRequest
             )
         }
     }

@@ -1,6 +1,10 @@
 package com.peachspot.legendkofarm.ui.screens
 
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
+import android.util.Log
 import android.webkit.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -15,6 +19,13 @@ import com.peachspot.legendkofarm.R
 import com.peachspot.legendkofarm.ui.components.MyAppTopBar
 import com.peachspot.legendkofarm.viewmodel.HomeViewModel
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat.startActivityForResult
+import com.google.accompanist.permissions.PermissionState
+import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+
+import com.peachspot.legendkofarm.MainActivity
 import com.peachspot.legendkofarm.ui.components.CommonWebView
 
 import com.peachspot.legendkofarm.ui.navigation.AppScreenRoutes
@@ -22,17 +33,22 @@ import com.peachspot.legendkofarm.util.Logger
 import com.peachspot.legendkofarm.viewmodel.HomeUiState
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+
+
+
+@OptIn(ExperimentalPermissionsApi::class,ExperimentalMaterial3Api::class)
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun DiaryScreen(
     viewModel: HomeViewModel,
     navController: NavController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onFileChooserRequest: (ValueCallback<Array<Uri>>, Intent) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val activity = context as? Activity
 
     var showUrlPopup by remember { mutableStateOf(false) }
     var popupUrl by remember { mutableStateOf<String?>(null) }
@@ -41,6 +57,27 @@ fun DiaryScreen(
     var showAlert by remember { mutableStateOf(false) }
     var alertMessage by remember { mutableStateOf<String?>(null) }
     var jsAlertResult by remember { mutableStateOf<JsResult?>(null) }
+
+
+    val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
+
+    LaunchedEffect(cameraPermissionState.status) {
+        if (!cameraPermissionState.status.isGranted) {
+            Log.d("DiaryScreen", "Requesting camera permission")
+            cameraPermissionState.launchPermissionRequest()
+        }
+    }
+
+    if (cameraPermissionState.status.isGranted) {
+        Text("카메라 권한 허용됨")
+    } else {
+        Text("카메라 권한 필요")
+        Button(onClick = { cameraPermissionState.launchPermissionRequest() }) {
+            Text("권한 요청")
+        }
+    }
+
+
 //
 //    val coroutineScope = rememberCoroutineScope()
 //    var isRefreshing by remember { mutableStateOf(false) }
@@ -158,7 +195,7 @@ fun DiaryScreen(
 
 
                 CommonWebView(
-                    url = stringResource(R.string.url)+"/dairy",
+                    url = "https://urdesk.co.kr/smartkofarmDiary",
                     modifier = modifier
                         .padding(innerPadding)
                         .fillMaxSize(),
@@ -171,7 +208,8 @@ fun DiaryScreen(
                         alertMessage = message
                         jsAlertResult = result
                         showAlert = true
-                    }
+                    },
+                    onFileChooserRequest = onFileChooserRequest
                 )
             }
 

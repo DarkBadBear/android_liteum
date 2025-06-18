@@ -2,6 +2,9 @@ package com.peachspot.legendkofarm.ui.screens
 
 import com.peachspot.legendkofarm.R
 import android.app.Application
+import android.content.Intent
+import android.net.Uri
+import android.webkit.ValueCallback
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -46,7 +49,9 @@ data class BottomNavigationItem(
 //0c275a
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    onFileChooserRequest: (ValueCallback<Array<Uri>>, Intent) -> Unit
+) {
     val navController = rememberNavController()
     var selectedTab by rememberSaveable { mutableStateOf(0) }
 
@@ -102,7 +107,8 @@ fun MainScreen() {
         NavHost(
             navController = navController,
             startDestination = "home_tab_host", // 기본적으로 탭 콘텐츠를 보여주는 라우트
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+
         ) {
             composable("home_tab_host") {
                 val screenModifier = Modifier
@@ -112,27 +118,33 @@ fun MainScreen() {
                 when (selectedTab) {
                     0 -> HomeScreen(
                         viewModel = homeViewModel,
-                        navController = navController
+                        navController = navController,
+                        onFileChooserRequest = onFileChooserRequest
                     )
 
                     1 -> DiaryScreen(
                         viewModel = homeViewModel,
-                        navController = navController
+                        navController = navController,
+                        onFileChooserRequest = onFileChooserRequest
                     )
 
                     2 -> ExchangeScreen(
                         viewModel = homeViewModel,
-                        navController = navController
+                        navController = navController,
+                        onFileChooserRequest = onFileChooserRequest
                     )
 
                     3 -> NewsScreen(
                         viewModel = homeViewModel,
-                        navController = navController
+                        navController = navController,
+                        onFileChooserRequest = onFileChooserRequest
                     )
 
                     4 -> ProfileScreen(
                         viewModel = homeViewModel,
                         navController = navController
+                            //onFileChooserRequest = onFileChooserRequest
+
                     )
 
                 }
@@ -154,13 +166,13 @@ fun MainScreen() {
 @Composable
 fun AppNavHost(
     navController: NavHostController,
-    // ... (필요한 ViewModel 인스턴스들)
     homeViewModel: HomeViewModel, // 예시로 HomeScreen에 필요
+    onFileChooserRequest: (ValueCallback<Array<Uri>>, Intent) -> Unit
     // ...
 ) {
     NavHost(navController = navController, startDestination = "main_screen_route") { // 시작 화면 라우트
         composable("main_screen_route") {
-            HomeScreen(viewModel = homeViewModel, navController = navController)
+            HomeScreen(viewModel = homeViewModel, navController = navController,onFileChooserRequest = onFileChooserRequest)
         }
         composable("notification_screen_route") {
             NotificationScreen(onNavigateBack = { navController.popBackStack() })

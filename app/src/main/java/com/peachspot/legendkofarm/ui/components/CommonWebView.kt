@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Message
+import android.provider.MediaStore
 import android.util.Log
 import android.webkit.*
 import android.widget.LinearLayout
@@ -12,8 +13,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.FileProvider
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.google.android.gms.common.wrappers.Wrappers.packageManager
+import java.io.File
 import java.net.URI
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import android.content.Context
+import android.os.Environment
 
 object DiaryScreenContentTypes {
     const val INFO = "info"
@@ -21,16 +30,21 @@ object DiaryScreenContentTypes {
     const val ERROR = "error"
 }
 
+private var fileCallback: ValueCallback<Array<Uri>>? = null
+private var imageUri: Uri? = null
+
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun CommonWebView(
     url: String,
     modifier: Modifier = Modifier,
     onShowPopup: (String, WebView) -> Unit,
-    onJsAlert: (String, JsResult) -> Unit
+    onJsAlert: (String, JsResult) -> Unit,
+    onFileChooserRequest: (ValueCallback<Array<Uri>>, Intent) -> Unit
 ) {
     val context = LocalContext.current
     var isRefreshing by remember { mutableStateOf(false) }
+
 
     val webView = remember {
         WebView(context).apply {
@@ -50,7 +64,9 @@ fun CommonWebView(
     AndroidView(
         factory = { ctx ->
             SwipeRefreshLayout(ctx).apply {
-                isEnabled = false // 새로고침 끄기
+
+                isEnabled = false
+
                     setOnRefreshListener {
                         isRefreshing = true
                         webView.reload()
@@ -81,6 +97,18 @@ fun CommonWebView(
                 }
 
                 webView.webChromeClient = object : WebChromeClient() {
+
+                    override fun onShowFileChooser(
+                        webView: WebView?,
+                        filePathCallback: ValueCallback<Array<Uri>>,
+                        fileChooserParams: FileChooserParams
+                    ): Boolean {
+                        val intent = fileChooserParams.createIntent()
+                        onFileChooserRequest(filePathCallback, intent)
+                        return true
+                    }
+
+
                     override fun onJsAlert(view: WebView?, url: String?, message: String?, result: JsResult?): Boolean {
                         return if (message != null && result != null) {
                             onJsAlert(message, result)
@@ -203,6 +231,16 @@ private fun isSameDomain(currentUrl: String?, newUrl: String?): Boolean {
         false
     }
 }
+
+private fun createImageFile(context: Context): File {
+    val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+    val imageFileName = "JPEG_$timeStamp"
+    val storageDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+    return File.createTempFile(imageFileName, ".jpg", storageDir)
+}
+
+
+
 
 private fun shouldOpenInExternalBrowser(currentWebViewUrl: String?, targetUrl: String?): Boolean {
     return try {
