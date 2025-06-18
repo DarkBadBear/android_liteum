@@ -28,7 +28,7 @@ public abstract class AppDatabase : RoomDatabase() {
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
-        private const val DATABASE_NAME = "smartkofarm_database"
+        private const val DATABASE_NAME = "legendkofarm_database"
 
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {

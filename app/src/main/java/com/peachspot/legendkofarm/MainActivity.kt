@@ -43,7 +43,7 @@ import com.google.firebase.remoteconfig.remoteConfigSettings
 import com.peachspot.legendkofarm.data.remote.client.NetworkClient.myApiService
 import com.peachspot.legendkofarm.services.MyFirebaseMessagingService
 import com.peachspot.legendkofarm.ui.screens.MainScreen
-import com.peachspot.legendkofarm.ui.theme.SmartKofarmiTheme
+import com.peachspot.legendkofarm.ui.theme.legendkofarmiTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -53,7 +53,7 @@ class MainActivity : ComponentActivity() {
 
     private var backPressedTime: Long = 0
     private val exitToastDuration: Int = 2000 // 2초 (밀리초 단위)
-    private val TAG = "smartkofarm"
+    private val TAG = "legendkofarm"
 
     // Composable에서 다이얼로그 표시 여부를 제어하기 위한 상태
     private var showUpdateDialogState by mutableStateOf(false)
@@ -106,7 +106,7 @@ class MainActivity : ComponentActivity() {
 //        Firebase.appCheck.installAppCheckProviderFactory(
 //            PlayIntegrityAppCheckProviderFactory.getInstance()
 //        )
-        setupRemoteConfig()
+            //setupRemoteConfig()
 
 
         val onBackPressedCallback = object : OnBackPressedCallback(true) {
@@ -123,7 +123,7 @@ class MainActivity : ComponentActivity() {
         onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
 
         setContent {
-            SmartKofarmiTheme {
+            legendkofarmiTheme {
                 val navController = rememberNavController()
                 // ViewModel 인스턴스 생성 (Hilt 미사용)
                 // 예시: MainScreen.kt에서 ViewModel을 생성하는 방식을 따르거나, Application 인스턴스를 전달
@@ -306,33 +306,33 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
-        const val ACTION_FOREGROUND_MESSAGE = "com.peachspot.oroogi.ACTION_FOREGROUND_MESSAGE"
-        const val EXTRA_TITLE = "com.peachspot.oroogi.EXTRA_TITLE"
-        const val EXTRA_BODY = "com.peachspot.oroogi.EXTRA_BODY"
-        const val EXTRA_LINK = "com.peachspot.oroogi.EXTRA_LINK"
+        const val ACTION_FOREGROUND_MESSAGE = "com.peachspot.legendkofarm.ACTION_FOREGROUND_MESSAGE"
+        const val EXTRA_TITLE = "com.peachspot.legendkofarm.EXTRA_TITLE"
+        const val EXTRA_BODY = "com.peachspot.legendkofarm.EXTRA_BODY"
+        const val EXTRA_LINK = "com.peachspot.legendkofarm.EXTRA_LINK"
     }
 
 
-    private fun setupRemoteConfig() {
-        val remoteConfig = Firebase.remoteConfig
-        val configSettings = remoteConfigSettings {
-            minimumFetchIntervalInSeconds =
-                if (com.peachspot.smartkofarm.BuildConfig.DEBUG) {
-                    0
-                } else {
-                    3600
-                }
-        }
-        remoteConfig.setConfigSettingsAsync(configSettings)
-        remoteConfig.setDefaultsAsync(R.xml.remote_config_defaults)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    Log.d(TAG, "Remote Config defaults loaded.")
-                } else {
-                    Log.e(TAG, "Failed to load Remote Config defaults.", task.exception)
-                }
-            }
-    }
+//    private fun setupRemoteConfig() {
+//        val remoteConfig = Firebase.remoteConfig
+//        val configSettings = remoteConfigSettings {
+//            minimumFetchIntervalInSeconds =
+//                if (com.peachspot.legendkofarm.BuildConfig.DEBUG) {
+//                    0
+//                } else {
+//                    3600
+//                }
+//        }
+//        remoteConfig.setConfigSettingsAsync(configSettings)
+//        remoteConfig.setDefaultsAsync(R.xml.remote_config_defaults)
+//            .addOnCompleteListener { task ->
+//                if (task.isSuccessful) {
+//                    Log.d(TAG, "Remote Config defaults loaded.")
+//                } else {
+//                    Log.e(TAG, "Failed to load Remote Config defaults.", task.exception)
+//                }
+//            }
+//    }
 
     private fun registerAppToken() {
 
@@ -378,7 +378,7 @@ class MainActivity : ComponentActivity() {
 //                        val isForceUpdate = remoteConfig.getBoolean("is_force_update")
 //                        val updateMessage = remoteConfig.getString("update_message")
 //                        val storeUrl = remoteConfig.getString("store_url")
-//                        val currentVersionCode = com.peachspot.smartkofarm.BuildConfig.VERSION_CODE
+//                        val currentVersionCode = com.peachspot.legendkofarm.BuildConfig.VERSION_CODE
 //                        Log.d(
 //                            TAG,
 //                            "Current Version Code: $currentVersionCode, Latest Version Code: $latestVersionCode"

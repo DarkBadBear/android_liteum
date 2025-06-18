@@ -36,11 +36,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     companion object {
-        private const val TAG = "smartkofarmMsgService"
-        const val ACTION_FOREGROUND_MESSAGE = "com.peachspot.smartkofarm.ACTION_FOREGROUND_MESSAGE"
-        const val EXTRA_TITLE = "com.peachspot.smartkofarm.EXTRA_TITLE" // Consider moving these too if they are only used with this action
-        const val EXTRA_BODY = "com.peachspot.smartkofarm.EXTRA_BODY"
-        const val EXTRA_LINK = "com.peachspot.smartkofarm.EXTRA_LINK"
+        private const val TAG = "legendkofarmMsgService"
+        const val ACTION_FOREGROUND_MESSAGE = "com.peachspot.legendkofarm.ACTION_FOREGROUND_MESSAGE"
+        const val EXTRA_TITLE = "com.peachspot.legendkofarm.EXTRA_TITLE" // Consider moving these too if they are only used with this action
+        const val EXTRA_BODY = "com.peachspot.legendkofarm.EXTRA_BODY"
+        const val EXTRA_LINK = "com.peachspot.legendkofarm.EXTRA_LINK"
         private const val KEY_SERVER_TITLE = "title" // 예시: 서버에서 "title"로 보낸다면
         private const val KEY_SERVER_MESSAGE = "body"  // 예시: 서버에서 "body" 또는 "message"로 보낸다면
         private const val KEY_SERVER_IMAGE = "image" // 예시: 서버에서 "image"로 보낸다면

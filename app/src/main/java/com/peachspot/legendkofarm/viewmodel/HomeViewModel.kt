@@ -348,13 +348,10 @@ class HomeViewModel (
                             userEmail = firebaseUser.email,
                             userPhotoUrl = firebaseUser.photoUrl?.toString(),
                             isLoading = false,
-
                             firebaseUid = firebaseUid,
                             userMessage = "로그인 되었습니다."
                         )
                     }
-
-
 
                     Logger.d(
                         "ProfileViewModel",
@@ -436,6 +433,9 @@ class HomeViewModel (
     fun toggleTermsAccepted() {
         val newTermsAccepted = !(_uiState.value.termsAccepted)
         Logger.d("NICAP", newTermsAccepted.toString())
+        _uiState.update {
+            it.copy(termsAccepted = newTermsAccepted)
+        }
         viewModelScope.launch {
             userPreferencesRepository.saveAgree(newTermsAccepted)
         }

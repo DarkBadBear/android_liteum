@@ -119,7 +119,7 @@ fun ProfileScreen(
     val uriHandler = LocalUriHandler.current
     fun website() {
         val url =
-            "https://www.peachspot.co.kr/oroogi" // 여기에 실제 웹사이트 주소 입력
+            "https://www.peachspot.co.kr/legendkofarm" // 여기에 실제 웹사이트 주소 입력
         try {
             uriHandler.openUri(url)
         } catch (e: Exception) {
@@ -132,7 +132,7 @@ fun ProfileScreen(
 
     fun privacy() {
         val url =
-            "https://www.peachspot.co.kr/oroogi/privacy" // 여기에 실제 웹사이트 주소 입력
+            "https://www.peachspot.co.kr/legendkofarm/privacy" // 여기에 실제 웹사이트 주소 입력
         try {
             uriHandler.openUri(url)
         } catch (e: Exception) {
@@ -149,7 +149,7 @@ fun ProfileScreen(
         drawerContent = {
             ModalDrawerSheet {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("오르기 oroogi ", style = MaterialTheme.typography.titleMedium)
+                    Text("오르기 legendkofarm ", style = MaterialTheme.typography.titleMedium)
                     Text("올라가는 운동을 위한\n기록용 앱입니다.\n운동기록을 솔직하게 기록하시면\n됩니다.")
                     Spacer(modifier = Modifier.height(8.dp))
 

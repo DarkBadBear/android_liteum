@@ -13,7 +13,7 @@ import androidx.navigation.NavController
 import com.peachspot.legendkofarm.ui.components.MyAppTopBar
 import com.peachspot.legendkofarm.viewmodel.HomeViewModel
 import com.peachspot.legendkofarm.ui.components.CommonWebView
-
+import com.peachspot.legendkofarm.R
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,7 +47,7 @@ fun ExchangeScreen(
 //            settings.setSupportMultipleWindows(true)
 //            settings.loadWithOverviewMode = true
 //            settings.useWideViewPort = true
-//            loadUrl("https://urdesk.co.kr/smartkofarm/diary")
+//            loadUrl("https://urdesk.co.kr/legendkofarm/diary")
 //        }
 //    }
 
@@ -119,7 +119,7 @@ fun ExchangeScreen(
     ) { innerPadding ->
         Box(modifier = modifier.padding(innerPadding).fillMaxSize()) {
             CommonWebView(
-                url = "https://urdesk.co.kr/smartkofarmexchange",
+                url = stringResource(R.string.url)+"/exchange",
                 modifier = modifier
                     //.padding(innerPadding)
                     .fillMaxSize(),

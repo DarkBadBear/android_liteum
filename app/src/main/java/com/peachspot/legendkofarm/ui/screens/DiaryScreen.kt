@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
+import com.peachspot.legendkofarm.R
 import com.peachspot.legendkofarm.ui.components.MyAppTopBar
 import com.peachspot.legendkofarm.viewmodel.HomeViewModel
 import androidx.compose.ui.unit.dp
@@ -52,7 +53,7 @@ fun DiaryScreen(
 //            settings.setSupportMultipleWindows(true)
 //            settings.loadWithOverviewMode = true
 //            settings.useWideViewPort = true
-//            loadUrl("https://urdesk.co.kr/smartkofarm/diary")
+//            loadUrl("https://urdesk.co.kr/legendkofarm/diary")
 //        }
 //    }
 
@@ -157,7 +158,7 @@ fun DiaryScreen(
 
 
                 CommonWebView(
-                    url = "https://urdesk.co.kr/smartkofarmdiary",
+                    url = stringResource(R.string.url)+"/dairy",
                     modifier = modifier
                         .padding(innerPadding)
                         .fillMaxSize(),

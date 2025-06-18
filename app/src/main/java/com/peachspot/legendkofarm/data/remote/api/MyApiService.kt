@@ -17,16 +17,16 @@ data class ApiResponseWrapper<T>(
 interface MyApiService {
 
 
-    @POST("oroogi/delete_member")
+    @POST("legendkofarm/delete_member")
     suspend fun deleteMemberData(@Query("uid") firebaseUid: String): Response<Unit>
 
-//    @POST("oroogi/update_building_data") // 실제 API 엔드포인트로 변경하세요
+//    @POST("legendkofarm/update_building_data") // 실제 API 엔드포인트로 변경하세요
 //    suspend fun updateBuildingData(@Body logData: ExerciseLogUpdateRequest): Response<Unit>
 //
-//    @POST("oroogi/update_mountain_data") // 실제 API 엔드포인트로 변경하세요
+//    @POST("legendkofarm/update_mountain_data") // 실제 API 엔드포인트로 변경하세요
 //    suspend fun updateMountainData(@Body logData: MountainLogUpdateRequest): Response<Unit>
 //
-//    @POST("oroogi/update_stair_data") // 실제 API 엔드포인트로 변경하세요
+//    @POST("legendkofarm/update_stair_data") // 실제 API 엔드포인트로 변경하세요
 //    suspend fun updateStairData(@Body logData: StairLogUpdateRequest): Response<Unit>
 
 
@@ -35,14 +35,14 @@ interface MyApiService {
      * @param firebaseUid 사용자 식별자
      * @param databaseDumpJson 모든 테이블 데이터가 포함된 JSON 문자열
      */
-    @POST("oroogi/ApRdGc") // 엔드포인트 이름을 더 명확하게 변경
+    @POST("legendkofarm/ApRdGc") // 엔드포인트 이름을 더 명확하게 변경
     suspend fun registerDevice(
         @Query("tableId") tableName: String,
         @Query("uid") firebaseUid: String,
     ): Response<Unit>
 
 
-    @POST("oroogi/uploadExerciseLog") // 엔드포인트 이름을 더 명확하게 변경
+    @POST("legendkofarm/uploadExerciseLog") // 엔드포인트 이름을 더 명확하게 변경
     suspend fun uploadDatabaseDumpJson(
         @Query("tableId") tableName: String,
         @Query("uid") firebaseUid: String, // 사용자 식별을 위해 UID를 쿼리 파라미터로 추가하는 것을 고려
@@ -51,25 +51,25 @@ interface MyApiService {
 
 //
 //    // 반환 타입을 ApiResponseWrapper로 변경하여 실제 JSON 구조에 맞춤
-//    @GET("oroogi/downExerciseLog")
+//    @GET("legendkofarm/downExerciseLog")
 //    suspend fun downExerciseJson(
 //        @Query("tableId") tableName: String,
 //        @Query("uid") firebaseUid: String,
 //    ): Response<ApiResponseWrapper<List<ExerciseLogs>>>
 //
-//    @GET("oroogi/downExerciseLog")
+//    @GET("legendkofarm/downExerciseLog")
 //    suspend fun downMountainJson(
 //        @Query("tableId") tableName: String,
 //        @Query("uid") firebaseUid: String,
 //    ): Response<ApiResponseWrapper<List<MountainLog>>>
 //
-//    @GET("oroogi/downExerciseLog")
+//    @GET("legendkofarm/downExerciseLog")
 //    suspend fun downStairJson(
 //        @Query("tableId") tableName: String,
 //        @Query("uid") firebaseUid: String,
 //    ): Response<ApiResponseWrapper<List<StairLogs>>>
 //
-//    @GET("oroogi/downExerciseLog")
+//    @GET("legendkofarm/downExerciseLog")
 //    suspend fun downTotalStatJson(
 //        @Query("tableId") tableName: String,
 //        @Query("uid") firebaseUid: String,

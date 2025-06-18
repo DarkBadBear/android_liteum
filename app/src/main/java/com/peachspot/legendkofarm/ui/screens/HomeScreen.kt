@@ -13,7 +13,7 @@ import androidx.navigation.NavController
 import com.peachspot.legendkofarm.ui.components.MyAppTopBar
 import com.peachspot.legendkofarm.viewmodel.HomeViewModel
 import com.peachspot.legendkofarm.ui.components.CommonWebView
-
+import com.peachspot.legendkofarm.R
 
 object HomeScreenContentTypes {
     const val INFO = "info"
@@ -56,7 +56,7 @@ fun HomeScreen(
 //            settings.setSupportMultipleWindows(true)
 //            settings.loadWithOverviewMode = true
 //            settings.useWideViewPort = true
-//            loadUrl("https://urdesk.co.kr/smartkofarm/diary")
+//            loadUrl("https://urdesk.co.kr/legendkofarm/diary")
 //        }
 //    }
 
@@ -128,7 +128,7 @@ fun HomeScreen(
     ) { innerPadding ->
         Box(modifier = modifier.padding(innerPadding).fillMaxSize()) {
             CommonWebView(
-                url = "https://urdesk.co.kr/smartkofarm",
+                url = stringResource(R.string.url),
                 modifier = modifier
                     //.padding(innerPadding)
                     .fillMaxSize(),

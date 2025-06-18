@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "android_smartkofarm"
+rootProject.name = "android_legendkofarm"
 include(":app")

@@ -10,7 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 @Composable
-fun SmartKofarmiTheme( // PascalCase for Composable functions
+fun legendkofarmiTheme( // PascalCase for Composable functions
     useDarkTheme: Boolean = false,// isSystemInDarkTheme(), // More descriptive parameter name
     // Dynamic color is available on Android 12+
     useDynamicColor: Boolean = true, // More descriptive parameter name

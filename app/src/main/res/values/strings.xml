@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">전설의 농부</string>
     <string name="tab_label_building">홈</string>
-    <string name="default_notification_channel_id">smartkofarm_ch_02</string>
+    <string name="default_notification_channel_id">legendkofarm_ch_02</string>
     <string name="default_notification_channel_name">전설의농부</string>
     <string name="default_notification_channel_description">알림</string>
     <string name="default_notification_message_body">메세지</string>
@@ -28,4 +28,5 @@
     <string name="dialog_close">닫기</string>
     <string name="profile_agree_to_privacy_policy">개인정보취급방침</string>
     <string name="tab_profile">프로필</string>
+    <string name="url">https://urdesk.co.kr/smartkofarm</string>
 </resources>

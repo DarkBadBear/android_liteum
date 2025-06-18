@@ -23,11 +23,11 @@ if (localPropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.peachspot.smartkofarm"
+    namespace = "com.peachspot.legendkofarm"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.peachspot.smartkofarm"
+        applicationId = "com.peachspot.legendkofarm"
         minSdk = 33
         targetSdk = 35
         versionCode = 7
@@ -93,6 +93,7 @@ android {
 
 dependencies {
     implementation(platform(libs.firebase.bom))
+    implementation(libs.androidx.swipeRefreshLayout) // Use the alias you defined in libs.versions.toml
 
 
     implementation(libs.firebase.appcheck)
