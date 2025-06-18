@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.peachspot.smartkofarm">
+    package="com.peachspot.legendkofarm">
 
     <uses-sdk tools:overrideLibrary="com.google.firebase.messaging" />
 
@@ -16,7 +16,7 @@
 
 
     <application
-        android:name=".Smartkofarm"
+        android:name="com.peachspot.legendkofarm.Smartkofarm"
         android:theme="@style/Theme.Android_smartkofarm"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -40,7 +40,7 @@
         android:resource="@color/colorAccent" />
     <!-- MainActivity 선언도 여기에 한 번만 있어야 합니다. -->
     <activity
-        android:name=".MainActivity"
+        android:name="com.peachspot.legendkofarm.MainActivity"
         android:exported="true"
         android:configChanges="screenSize|orientation">
         <intent-filter>

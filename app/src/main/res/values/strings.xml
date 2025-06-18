@@ -18,4 +18,14 @@
     <string name="no_notifications_available">받은 알림이 없습니다.</string>
     <string name="notification_item_image_content_desc">ㅇ_ㅇ</string>
     <string name="mountain_icon_content_description">아이템</string>
+    <string name="tab_diary">작업일지</string>
+    <string name="tab_exchange">거래 시세</string>
+    <string name="tab_news">소식</string>
+    <string name="default_web_client_id">908997994856-rbit5j9q0vh9s14rfkok5ckoqr6cna03.apps.googleusercontent.com</string>
+    <string name="screen_title">마이페이지</string>
+    <string name="profile_google_sync_description">구글 로그인</string>
+    <string name="privacy_policy_content">개인정보취급안내</string>
+    <string name="dialog_close">닫기</string>
+    <string name="profile_agree_to_privacy_policy">개인정보취급방침</string>
+    <string name="tab_profile">프로필</string>
 </resources>

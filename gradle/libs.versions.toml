@@ -4,64 +4,56 @@ kotlin = "2.0.21"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
-lifecycleRuntimeKtx = "2.9.0"
+lifecycleRuntimeKtx = "2.9.1"
 activityCompose = "1.10.1"
-composeBom = "2024.09.00"
-room = "2.6.1"
+composeBom = "2025.06.00"
+room = "2.7.1"
 kotlinx-coroutines = "1.7.3"
-lifecycleCompose = "2.7.0"
-gson = "2.10.1"
+lifecycleCompose = "2.9.1"
+gson = "2.11.0"
 maps-compose = "2.11.4"
-play-services-maps = "18.2.0"
+play-services-maps = "19.2.0"
 javaxInject = "1"
 hilt = "2.48"
-ksp = "2.0.21-1.0.21"
+ksp = "2.0.21-1.0.27"
 androidxHealthServices = "1.1.0-alpha05"
-androidxCoreKtx = "1.9.0"
+androidxCoreKtx = "1.16.0"
 accompanistPermissions = "0.34.0"
-playServicesLocation = "21.2.0"
+playServicesLocation = "21.3.0"
 kotlinxCoroutinesPlayServices = "1.7.3"
-datastorePreferences = "1.1.1"
+datastorePreferences = "1.1.7"
 datastoreCoreAndroid = "1.1.7"
-firebaseBom = "33.0.0"
-playServicesAuth = "21.0.0"
-androidxLifecycle = "2.7.0"
+firebaseBom = "33.15.0"
+playServicesAuth = "21.3.0"
+androidxLifecycle = "2.9.1"
 androidxDataStore = "1.0.0"
 googleServicesPlugin = "4.4.1"
 navigationComposeJvmstubs = "2.9.0"
-androidxNavigation = "2.7.7"
+androidxNavigation = "2.9.0"
 credentials = "1.2.0-beta01"
 androidxCredentials = "1.5.0"
 googleid = "1.1.1"
 retrofit = "2.9.0"
 gsonConverter = "2.9.0"
-okhttp = "4.11.0"
+okhttp = "4.12.0"
 okhttpLoggingInterceptor = "4.11.0"
 firebaseAppcheckKtx = "18.0.0"
 firebaseAppCheckPlayIntegrity = "18.0.0"
-firebase-firestore = "24.10.3"
-firebase-common-ktx = "20.4.3"
+firebase-firestore = "25.1.4"
+firebase-common-ktx = "21.0.0"
 material3 = "1.12.0"
-material3_compose = "1.2.1"
-accompanist = "0.34.0"
-composeMaterial = "1.6.8"
-swiperefresh = "1.1.0"
+material3_compose = "1.3.2"
+coil = "2.6.0"
+googleGmsServices = "4.4.2"  # 2024년 2월 기준 최신 버전 확인 필요
 
 [libraries]
-androidx-swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "swiperefreshlayout", version.ref = "swiperefresh" }
-androidx-compose-material = { group = "androidx.compose.material", name = "material", version.ref = "composeMaterial" }
-accompanist-swiperefresh = { group = "com.google.accompanist", name = "accompanist-swiperefresh", version.ref = "accompanist" }
-# 또는 버전을 직접 명시하려면:
-#
-
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 material3 = { group = "com.google.android.material", name = "material", version.ref = "material3" }
 compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3_compose" }
-
 retrofit-core = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "gsonConverter" }
 okhttp-core = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-loggingInterceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttpLoggingInterceptor" }
-
 androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "androidxCredentials" }
 androidx-credentials-playServicesAuth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "androidxCredentials" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "androidxNavigation" }
@@ -121,12 +113,13 @@ androidx-navigation-compose-jvmstubs = { group = "androidx.navigation", name = "
 googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
 
 [plugins]
-google-gms-services = { id = "com.google.gms.google-services", version.ref = "googleServicesPlugin" }
+
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+google-gms-services = { id = "com.google.gms.google-services", version.ref = "googleGmsServices" }
 
 [bundles]
 firebase-auth-bundle = ["firebase-auth"]
