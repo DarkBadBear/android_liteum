@@ -1,26 +1,44 @@
 {
   "project_info": {
-    "project_number": "666857106516",
-    "project_id": "smartkofarm",
-    "storage_bucket": "smartkofarm.firebasestorage.app"
+    "project_number": "562206454519",
+    "project_id": "legendkofarm",
+    "storage_bucket": "legendkofarm.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:666857106516:android:3a364663d82e02729411c1",
+        "mobilesdk_app_id": "1:562206454519:android:975b4144848745534859f2",
         "android_client_info": {
-          "package_name": "com.peachspot.smartkofarm"
+          "package_name": "com.peachspot.legendkofarm"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "562206454519-s7ujuii958skj0vq15jr56pl2d663k36.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.peachspot.legendkofarm",
+            "certificate_hash": "7f1096020c8b35cc36842a6ba46278fcbb86a83d"
+          }
+        },
+        {
+          "client_id": "562206454519-600acavebt0hhjkudijr3l4pd3pqcpgm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyBFvaGnPfK3PgdiLwejrvTnJ1p0ChgNAPs"
+          "current_key": "AIzaSyCyX5lhnjR4WDpRUlYM_rjeBX9-7y96Anw"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "562206454519-600acavebt0hhjkudijr3l4pd3pqcpgm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

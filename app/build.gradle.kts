@@ -4,11 +4,15 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.hilt) // Hilt 플러그인을 현재 모듈에 적용
-    alias(libs.plugins.google.gms.services)
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.google.gms.services) // 여기서는 버전 명시 안 함 (프로젝트 수준에서 관리)
+
     kotlin("kapt")
 }
 
+hilt {
+    enableAggregatingTask = false
+}
 
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
@@ -18,40 +22,60 @@ if (localPropertiesFile.exists()) {
     }
 }
 
-
-
-hilt {
-    enableAggregatingTask = false
-}
-
 android {
-    namespace = "com.peachspot.smartkofarm"
+    namespace = "com.peachspot.legendkofarm"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.peachspot.smartkofarm"
+        applicationId = "com.peachspot.legendkofarm"
         minSdk = 33
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.0"
+        versionCode = 7
+        versionName = "1.3.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["MAPS_API_KEY"] =
-            localProperties.getProperty("MAPS_API_KEY", "") // 여기에 "" 대신 실제 키를 직접 넣지 마세요.
+            localProperties.getProperty("MAPS_API_KEY", "")
+    }
+
+    signingConfigs {
+        create("shared") {
+            storeFile = file(localProperties.getProperty("storeFile") as String)
+            storePassword = localProperties.getProperty("storePassword") as String
+            keyAlias = localProperties.getProperty("keyAlias") as String
+            keyPassword = localProperties.getProperty("keyPassword") as String
+        }
     }
 
     buildTypes {
-        release {
-            isMinifyEnabled = true
-            // Enables resource shrinking.
-            isShrinkResources = true
-
+        debug {
+//            ndk {
+//                debugSymbolLevel = "FULL"
+//            }
+            signingConfig = signingConfigs.getByName("shared")
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+
+        }
+
+        release {
+//            ndk {
+//                debugSymbolLevel = "SYMBOL_TABLE"
+//            }
+            isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = signingConfigs.getByName("shared")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+
         }
     }
-
+//이거 말고 다른 크래쉬 없나?
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -69,6 +93,9 @@ android {
 
 dependencies {
     implementation(platform(libs.firebase.bom))
+    implementation(libs.androidx.swipeRefreshLayout) // Use the alias you defined in libs.versions.toml
+
+
     implementation(libs.firebase.appcheck)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.appcheck.playintegrity)
@@ -77,13 +104,12 @@ dependencies {
     implementation(libs.firebase.config)
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.messaging)
-    implementation(libs.accompanist.swiperefresh)
+
     implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.compose.material)  ///
-    implementation(libs.accompanist.permissions)
-    implementation(libs.androidx.swiperefreshlayout)
-    implementation(libs.kotlinx.coroutines.play.services)
-    implementation(libs.kotlinxCoroutinesCore)
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.material3)
 
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
@@ -100,7 +126,7 @@ dependencies {
 
     implementation(libs.androidx.navigation.compose)
 
-
+    implementation(libs.androidx.health.services.client)
 
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.playServicesAuth)
@@ -110,13 +136,12 @@ dependencies {
     implementation(libs.play.services.maps)
     implementation(libs.play.services.location)
 
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.material3)
+    implementation(libs.accompanist.permissions)
+
+    implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.kotlinxCoroutinesCore) // kotlinx-coroutines-core의 alias로 가정
+
     implementation(libs.androidx.material.icons)
-    implementation(libs.compose.runtime)
-    implementation(libs.compose.runtime.saveable)
 
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.converter.gson)
@@ -125,20 +150,17 @@ dependencies {
     implementation(libs.roomKtx)
     kapt(libs.roomCompiler)
 
-    implementation(libs.material3)
-    implementation(libs.compose.material3)
-
     implementation(libs.gson)
 
-    implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation(libs.coil.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom)) // 중복될 수 있으나, compose test bom이 별도로 있다면 유지
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
+
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
-

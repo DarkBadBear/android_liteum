@@ -22,10 +22,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="com.peachspot.smartkofarm" />
-                  <option name="mobileSdkAppId" value="1:666857106516:android:3a364663d82e02729411c1" />
-                  <option name="projectId" value="smartkofarm" />
-                  <option name="projectNumber" value="666857106516" />
+                  <option name="appId" value="com.peachspot.legendkofarm" />
+                  <option name="mobileSdkAppId" value="1:562206454519:android:975b4144848745534859f2" />
+                  <option name="projectId" value="legendkofarm" />
+                  <option name="projectNumber" value="562206454519" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

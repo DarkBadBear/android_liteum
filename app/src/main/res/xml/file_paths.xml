@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 기존에 files-path만 있으면 이렇게 cache-path 추가 -->
+    <cache-path
+        name="cache"
+        path="." />
+</paths>

@@ -4,14 +4,17 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-06-13T00:26:33.010884Z">
+        <DropdownSelection timestamp="2025-06-14T07:11:51.128239Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=/Users/darkbadbear/.android/avd/Pixel_8.avd" />
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=R3CW20LSF3R" />
             </handle>
           </Target>
         </DropdownSelection>
         <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="android_legendkofarm.app">
+        <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>
   </component>
