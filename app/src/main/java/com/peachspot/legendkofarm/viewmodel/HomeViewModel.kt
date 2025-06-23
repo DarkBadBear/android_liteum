@@ -1,8 +1,10 @@
 package com.peachspot.legendkofarm.viewmodel
 
 import android.app.Application
+import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
+import android.webkit.WebView
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
@@ -17,6 +19,7 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingExcept
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.gson.Gson
 import com.peachspot.legendkofarm.data.remote.api.MyApiService
 import com.peachspot.legendkofarm.data.repositiory.HomeRepository
 import com.peachspot.legendkofarm.data.repositiory.UserPreferencesRepository
@@ -30,6 +33,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import com.peachspot.legendkofarm.R
+import kotlinx.coroutines.flow.first
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 
 data class HomeUiState(
     val errorMessage: String? = null,
@@ -67,6 +73,29 @@ class HomeViewModel (
     ): ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    private val webViewMap = mutableMapOf<String, WebView>()
+
+    fun refreshWebView(tag: String) {
+        webViewMap[tag]?.reload()
+    }
+
+    fun getOrCreateWebView(context: Context, tag: String, url: String): WebView {
+        return webViewMap.getOrPut(tag) {
+            WebView(context).apply {
+                settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                settings.javaScriptCanOpenWindowsAutomatically = true
+                settings.setSupportMultipleWindows(false)
+                settings.loadWithOverviewMode = true
+                settings.useWideViewPort = true
+                settings.allowFileAccess = true
+                settings.allowContentAccess = true
+                loadUrl(url)
+            }
+        }
+    }
+
 
     fun clearUserMessage() {
         _uiState.update { it.copy(userMessage = null) }
@@ -196,7 +225,13 @@ class HomeViewModel (
                     )
                 }
             }
+
+            val gson = Gson()
+            val dump =  "";
+                sendJsonToServer("regUid", gson.toJson(dump)) // 이 함수는 내부적으로 UI 상태를 업데이트합니다.
+
         }
+
     }
 
     // ProfileScreen에서 IntentSender (PendingIntent) 실행 후 결과를 받아 호출되는 함수
@@ -353,14 +388,8 @@ class HomeViewModel (
                         )
                     }
 
-                    Logger.d(
-                        "ProfileViewModel",
-                        "Firebase Google 인증 성공. 사용자: ${firebaseUser.email}, ID 토큰: ${
-                            firebaseIdToken?.take(
-                                10
-                            )
-                        }..."
-                    )
+
+
                 } else {
                     throw IllegalStateException("Firebase User is null after successful sign in.")
                 }
@@ -384,6 +413,62 @@ class HomeViewModel (
     private fun handleGetCredentialException(e: GetCredentialException, contextMessage: String) {
         Logger.d("login error", contextMessage)
     }
+
+
+
+    suspend fun sendJsonToServer(tableName: String, jsonData: String) {
+
+        val storedProfileData: UserProfileData? =
+            userPreferencesRepository.userProfileDataFlow.firstOrNull()
+        val storedFirebaseUid = storedProfileData?.firebaseUid
+
+        if (storedFirebaseUid == null) {
+            Logger.e("ProfileViewModel", "Firebase UID is null. Cannot send JSON to server.")
+            _uiState.update {
+                it.copy(
+                    userMessageType = "error",
+                    userMessage = "사용자 인증 정보를 찾을 수 없습니다. 다시 로그인해주세요."
+                )
+            }
+            return
+        }
+
+        try {
+            // 수정된 MediaType 생성
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+            val requestBody = jsonData.toRequestBody(mediaType)
+
+            val response =
+                myApiService.uploadDatabaseDumpJson(tableName, storedFirebaseUid, requestBody)
+            Logger.d("NICAP", "$tableName:SEND")
+
+            if (response.isSuccessful) {
+                Logger.d("ProfileViewModel", "JSON data sent to server successfully.")
+            } else {
+                val errorBody = response.errorBody()?.string()
+                Logger.e(
+                    "ProfileViewModel",
+                    "Failed to send JSON to server. Code: ${response.code()}, Error: $errorBody"
+                )
+                _uiState.update {
+                    it.copy(
+                        userMessageType = "error",
+                        userMessage = "인증 실패: ${response.message()} (코드: ${response.code()})"
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            Logger.e("ProfileViewModel", "Exception while sending JSON to server.", e)
+            _uiState.update {
+                it.copy(
+                    userMessageType = "error",
+                    userMessage = "인증중 오류 발생: ${e.localizedMessage}"
+                )
+            }
+        }
+    }
+
+
 
     fun signOut() {
         _uiState.update { it.copy(isLoading = true) }

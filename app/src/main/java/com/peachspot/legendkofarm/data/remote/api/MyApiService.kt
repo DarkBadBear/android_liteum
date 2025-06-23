@@ -35,14 +35,14 @@ interface MyApiService {
      * @param firebaseUid 사용자 식별자
      * @param databaseDumpJson 모든 테이블 데이터가 포함된 JSON 문자열
      */
-    @POST("legendkofarm/ApRdGc") // 엔드포인트 이름을 더 명확하게 변경
+    @POST("smartkofarm/ApRdGc") // 엔드포인트 이름을 더 명확하게 변경
     suspend fun registerDevice(
         @Query("tableId") tableName: String,
         @Query("uid") firebaseUid: String,
     ): Response<Unit>
 
 
-    @POST("legendkofarm/uploadExerciseLog") // 엔드포인트 이름을 더 명확하게 변경
+    @POST("smartkofarm/dlrjtdlek_rgmd") // 엔드포인트 이름을 더 명확하게 변경
     suspend fun uploadDatabaseDumpJson(
         @Query("tableId") tableName: String,
         @Query("uid") firebaseUid: String, // 사용자 식별을 위해 UID를 쿼리 파라미터로 추가하는 것을 고려

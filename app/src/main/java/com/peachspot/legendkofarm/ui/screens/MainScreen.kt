@@ -12,6 +12,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -86,7 +87,8 @@ fun MainScreen(
     Scaffold(
         bottomBar = {
             NavigationBar(
-                containerColor = Color(0xFFFFFFFF)   ///MaterialTheme.colorScheme.surface
+                containerColor = Color(0xFF535353) ,
+
             ) {
                 navItems.forEachIndexed { index, item ->
                     NavigationBarItem(
@@ -98,6 +100,13 @@ fun MainScreen(
                             )
                         },
                         label = { Text(stringResource(id = item.labelResId)) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Color.White,
+                            unselectedIconColor = Color.Gray,
+                            selectedTextColor = Color.White,
+                            unselectedTextColor = Color.Gray,
+                            indicatorColor = Color.Transparent // 선택시 배경 강조 없애려면
+                        ),
                         selected = selectedTab == index,
                         onClick = { selectedTab = index })
                 }

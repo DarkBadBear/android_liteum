@@ -111,19 +111,30 @@ fun NewsScreen(
                 onNotificationClick = {
                     navController.navigate(AppScreenRoutes.NOTIFICATION_SCREEN)
                 },
+                onRefreshClicked ={
+                    viewModel.refreshWebView("news")
+                },
                 onTitleClick = {
                     // 👉 홈 화면으로 이동
-                    navController.navigate("home_tab_host") {
-                     //   popUpTo("home") { inclusive = true }
-                    }
+//                    navController.navigate("home_tab_host") {
+//                     //   popUpTo("home") { inclusive = true }
+//                    }
                 }
             )
         }
 
     ) { innerPadding ->
         Box(modifier = modifier.padding(innerPadding).fillMaxSize()) {
+            val webView = remember {
+                viewModel.getOrCreateWebView(
+                    context = context,
+                    tag = "news", // 고유 키 (탭별로 다르게 설정하세요)
+                    url = "https://urdesk.co.kr/smartkofarmnews?uid={${uiState.firebaseUid}",
+                )
+            }
+
             CommonWebView(
-                url = "https://urdesk.co.kr/smartkofarmNews",
+                webView = webView,
                 modifier = modifier
                     //.padding(innerPadding)
                     .fillMaxSize(),

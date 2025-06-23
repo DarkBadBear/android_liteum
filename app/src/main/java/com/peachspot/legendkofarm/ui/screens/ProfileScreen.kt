@@ -313,19 +313,19 @@ fun ProfileScreen(
                     modifier = Modifier
                 ) {
                     if (uiState.isUserLoggedIn) {
-                        TextButton(
-                            onClick = { saveDataDialog = true },
-                            enabled = uiState.isUserLoggedIn
-                        ) {
-                            Text("[저장하기]")
-                        }
-
-                        TextButton(
-                            onClick = { loadDataDialog = true },
-                            enabled = uiState.isUserLoggedIn
-                        ) {
-                            Text("[가져오기]")
-                        }
+//                        TextButton(
+//                            onClick = { saveDataDialog = true },
+//                            enabled = uiState.isUserLoggedIn
+//                        ) {
+//                            Text("[저장하기]")
+//                        }
+//
+//                        TextButton(
+//                            onClick = { loadDataDialog = true },
+//                            enabled = uiState.isUserLoggedIn
+//                        ) {
+//                            Text("[가져오기]")
+//                        }
 
                         TextButton(
                             onClick = { showExitDialog = true },

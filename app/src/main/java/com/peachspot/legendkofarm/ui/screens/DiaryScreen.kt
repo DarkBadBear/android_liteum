@@ -33,9 +33,6 @@ import com.peachspot.legendkofarm.util.Logger
 import com.peachspot.legendkofarm.viewmodel.HomeUiState
 
 
-
-
-
 @OptIn(ExperimentalPermissionsApi::class,ExperimentalMaterial3Api::class)
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -58,7 +55,6 @@ fun DiaryScreen(
     var alertMessage by remember { mutableStateOf<String?>(null) }
     var jsAlertResult by remember { mutableStateOf<JsResult?>(null) }
 
-
     val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
 
     LaunchedEffect(cameraPermissionState.status) {
@@ -78,22 +74,6 @@ fun DiaryScreen(
     }
 
 
-//
-//    val coroutineScope = rememberCoroutineScope()
-//    var isRefreshing by remember { mutableStateOf(false) }
-//
-//    val webView = remember {
-//        WebView(context).apply {
-//            settings.javaScriptEnabled = true
-//            settings.domStorageEnabled = true
-//            settings.javaScriptCanOpenWindowsAutomatically = true
-//            settings.setSupportMultipleWindows(true)
-//            settings.loadWithOverviewMode = true
-//            settings.useWideViewPort = true
-//            loadUrl("https://urdesk.co.kr/legendkofarm/diary")
-//        }
-//    }
-
     LaunchedEffect(uiState.userMessage) {
         uiState.userMessage?.let { message ->
             snackbarHostState.showSnackbar(
@@ -104,26 +84,6 @@ fun DiaryScreen(
         }
     }
 
-//
-//
-//    if (showAlert) {
-//        AlertDialog(
-//            onDismissRequest = {
-//                jsAlertResult?.cancel()
-//                showAlert = false
-//            },
-//            title = { Text("알림") },
-//            text = { Text(alertMessage ?: "") },
-//            confirmButton = {
-//                TextButton(onClick = {
-//                    jsAlertResult?.confirm()
-//                    showAlert = false
-//                }) {
-//                    Text("확인")
-//                }
-//            }
-//        )
-//    }
 
     Scaffold(
         snackbarHost = {
@@ -150,11 +110,14 @@ fun DiaryScreen(
                 onNotificationClick = {
                     navController.navigate(AppScreenRoutes.NOTIFICATION_SCREEN)
                 },
+                onRefreshClicked ={
+                    viewModel.refreshWebView("diary")
+                },
                 onTitleClick = {
-                    // 👉 홈 화면으로 이동
-                    navController.navigate("home_tab_host") {
-                        //popUpTo("home") { inclusive = true }
-                    }
+
+//                    navController.navigate("home_tab_host") {
+//                        //popUpTo("home") { inclusive = true }
+//                    }
                 }
             )
         }
@@ -193,9 +156,16 @@ fun DiaryScreen(
                 }
             } else {
 
+                val webView = remember {
+                    viewModel.getOrCreateWebView(
+                        context = context,
+                        tag = "diary", // 고유 키 (탭별로 다르게 설정하세요)
+                        url = "https://urdesk.co.kr/smartkofarmdiary?uid={${uiState.firebaseUid}",
+                    )
+                }
 
                 CommonWebView(
-                    url = "https://urdesk.co.kr/smartkofarmDiary",
+                    webView = webView,
                     modifier = modifier
                         .padding(innerPadding)
                         .fillMaxSize(),

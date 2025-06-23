@@ -7,7 +7,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object NetworkClient { // 또는 AppContainer 등 앱 전체에서 접근 가능한 객체
 
-    private const val BASE_URL = "https://peachspot.co.kr/"
+    private const val BASE_URL = "https://urdesk.co.kr/"
 
     private val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
