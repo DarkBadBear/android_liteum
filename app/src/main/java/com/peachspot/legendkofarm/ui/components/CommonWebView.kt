@@ -22,6 +22,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import android.content.Context
+import android.graphics.Bitmap
 import android.os.Environment
 import android.view.ViewGroup
 import androidx.lifecycle.Lifecycle
@@ -32,6 +33,10 @@ object DiaryScreenContentTypes {
     const val INFO = "info"
     const val SUCCESS = "success"
     const val ERROR = "error"
+}
+
+object CommonWebViewState {
+    var lastKnownUrl: String? = null
 }
 
 private var fileCallback: ValueCallback<Array<Uri>>? = null
@@ -88,7 +93,9 @@ private fun handleCustomUrl(context: Context, view: WebView?, url: String): Bool
                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                 true
             } else {
-                false
+
+                view?.loadUrl(url) // 이 한 줄이 있어야 내부 WebView가 처리함!
+                return true
             }
         }
     } catch (_: Exception) {
@@ -106,15 +113,20 @@ private fun isPackageInstalled(packageName: String?, packageManager: PackageMana
     }
 }
 
-private fun isSameDomain(currentUrl: String?, newUrl: String?): Boolean {
+
+
+fun isSameDomain(url1: String?, url2: String?): Boolean {
     return try {
-        val currentUri = URI(currentUrl ?: "")
-        val newUri = URI(newUrl ?: "")
-        currentUri.host.equals(newUri.host, ignoreCase = true)
-    } catch (_: Exception) {
+        val host1 = Uri.parse(url1).host?.removePrefix("www.")?.lowercase()
+        val host2 = Uri.parse(url2).host?.removePrefix("www.")?.lowercase()
+        host1 != null && host1 == host2
+    } catch (e: Exception) {
         false
     }
 }
+
+
+
 
 private fun shouldOpenInExternalBrowser(currentWebViewUrl: String?, targetUrl: String?): Boolean {
     return try {
@@ -139,6 +151,7 @@ fun CommonWebView(
 ) {
     val context = LocalContext.current
     var isRefreshing by remember { mutableStateOf(false) }
+
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -191,32 +204,21 @@ fun CommonWebView(
                     )
                 )
 
-
-//                addView(
-//                    webView,
-//                    LinearLayout.LayoutParams(
-//                        LinearLayout.LayoutParams.MATCH_PARENT,
-//                        LinearLayout.LayoutParams.MATCH_PARENT
-//                    )
-//                )
-
                 webView.webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
                         isRefreshing = false
                         this@apply.isRefreshing = false
-
+                        CommonWebViewState.lastKnownUrl = url
                         view?.evaluateJavascript(
                             "(function() { console.log('[WEBVIEW] Loaded URL: ' + window.location.href); })();",
                             null
                         )
                     }
 
-
-
-                    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                        val url = request?.url.toString()
-                        return handleCustomUrl(context, view, url)
-                    }
+//                    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+//                        val url = request?.url.toString()
+//                        return handleCustomUrl(context, view, url)
+//                    }
                 }
 
                 webView.webChromeClient = object : WebChromeClient() {
@@ -244,31 +246,57 @@ fun CommonWebView(
                             false
                         }
                     }
-
                     override fun onCreateWindow(
                         view: WebView?,
                         isDialog: Boolean,
                         isUserGesture: Boolean,
                         resultMsg: Message?
                     ): Boolean {
-                        val newWebView = WebView(view!!.context)
-                        val transport = resultMsg?.obj as? WebView.WebViewTransport
-                        transport?.webView = newWebView
-                        resultMsg?.sendToTarget()
+                        val context = view?.context ?: return false
+                        val mainWebView = view ?: return false
 
-                        newWebView.webViewClient = object : WebViewClient() {
-                            override fun shouldOverrideUrlLoading(wv: WebView, request: WebResourceRequest?): Boolean {
-                                val newUrl = request?.url.toString()
-                                if (isSameDomain(view.url, newUrl)) {
-                                    view.loadUrl(newUrl)
-                                } else {
-                                    onShowPopup(newUrl, view)
+                        val childWebView = WebView(context).apply {
+                            settings.javaScriptEnabled = true
+                            settings.javaScriptCanOpenWindowsAutomatically = true
+                            settings.domStorageEnabled = true
+                            settings.setSupportMultipleWindows(false)
+
+                            webViewClient = object : WebViewClient() {
+                                override fun shouldOverrideUrlLoading(wv: WebView, req: WebResourceRequest): Boolean {
+                                    val url = req.url.toString()
+                                    val baseUrl = mainWebView.url ?: CommonWebViewState.lastKnownUrl ?: ""
+
+                                    return when {
+                                        // 1. 외부 URL → handleCustomUrl로 처리
+                                        handleCustomUrl(context, mainWebView, url) -> {
+                                            wv.destroy()
+                                            true
+                                        }
+
+                                        // 2. 같은 도메인 → 기존 WebView에서 열기
+                                        isSameDomain(baseUrl, url) -> {
+                                            mainWebView.loadUrl(url)
+                                            wv.destroy()
+                                            true
+                                        }
+
+                                        // 3. 다른 도메인 → 새창 유지 (childWebView 그대로)
+                                        else -> false
+                                    }
                                 }
-                                return true
                             }
+
+                            webChromeClient = object : WebChromeClient() {} // 내부 팝업 방지용
                         }
+
+                        val transport = resultMsg?.obj as? WebView.WebViewTransport ?: return false
+                        transport.webView = childWebView
+                        resultMsg.sendToTarget()
+
                         return true
                     }
+
+
 
                     override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
                         consoleMessage?.let {
@@ -287,152 +315,3 @@ fun CommonWebView(
 }
 
 
-
-@Composable
-fun CommonWebView_02(
-    url: String,
-    modifier: Modifier = Modifier,
-    onShowPopup: (String, WebView) -> Unit,
-    onJsAlert: (String, JsResult) -> Unit,
-    onFileChooserRequest: (ValueCallback<Array<Uri>>, Intent) -> Unit
-) {
-    val context = LocalContext.current
-    var isRefreshing by remember { mutableStateOf(false) }
-
-    val webView = remember {
-        WebView(context).apply {
-            settings.javaScriptEnabled = true
-            settings.domStorageEnabled = true
-            settings.javaScriptCanOpenWindowsAutomatically = true
-            settings.setSupportMultipleWindows(false)
-            settings.loadWithOverviewMode = true
-            settings.useWideViewPort = true
-            settings.allowFileAccess = true
-            settings.allowContentAccess = true
-            loadUrl(url)
-        }
-    }
-
-    // ✅ Lifecycle 대응 추가
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_PAUSE -> {
-                    webView.onPause()
-                    webView.pauseTimers()
-                }
-                Lifecycle.Event.ON_RESUME -> {
-                    webView.resumeTimers()
-                    webView.onResume()
-
-                    // ✅ 포그라운드 복귀 시 WebView 상태 확인 후 reload
-                    val currentUrl = webView.url
-                    if (currentUrl.isNullOrBlank() || currentUrl == "about:blank") {
-                        webView.loadUrl(url)
-                    }
-                }
-                Lifecycle.Event.ON_DESTROY -> {
-                    webView.removeJavascriptInterface("Android")
-                    webView.destroy()
-                }
-                else -> Unit
-            }
-        }
-
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
-
-
-    AndroidView(
-        factory = { ctx ->
-            SwipeRefreshLayout(ctx).apply {
-                isEnabled = false
-
-                setOnRefreshListener {
-                    isRefreshing = true
-                    webView.reload()
-                }
-
-                addView(webView, LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.MATCH_PARENT
-                ))
-
-                webView.webViewClient = object : WebViewClient() {
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        isRefreshing = false
-                        this@apply.isRefreshing = false
-
-                        view?.evaluateJavascript(
-                            "(function() { console.log('[WEBVIEW] Loaded URL: ' + window.location.href); })();",
-                            null
-                        )
-                    }
-
-                    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                        val url = request?.url.toString()
-                        return handleCustomUrl(ctx, view, url)
-                    }
-                }
-
-                webView.webChromeClient = object : WebChromeClient() {
-                    override fun onShowFileChooser(
-                        webView: WebView?,
-                        filePathCallback: ValueCallback<Array<Uri>>,
-                        fileChooserParams: FileChooserParams
-                    ): Boolean {
-                        val intent = fileChooserParams.createIntent()
-                        onFileChooserRequest(filePathCallback, intent)
-                        return true
-                    }
-
-                    override fun onJsAlert(view: WebView?, url: String?, message: String?, result: JsResult?): Boolean {
-                        return if (message != null && result != null) {
-                            onJsAlert(message, result)
-                            result.confirm()
-                            true
-                        } else {
-                            false
-                        }
-                    }
-
-                    override fun onCreateWindow(view: WebView?, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message?): Boolean {
-                        val newWebView = WebView(view!!.context)
-                        val transport = resultMsg?.obj as? WebView.WebViewTransport
-                        transport?.webView = newWebView
-                        resultMsg?.sendToTarget()
-
-                        newWebView.webViewClient = object : WebViewClient() {
-                            override fun shouldOverrideUrlLoading(wv: WebView, request: WebResourceRequest?): Boolean {
-                                val newUrl = request?.url.toString()
-                                if (isSameDomain(view.url, newUrl)) {
-                                    view.loadUrl(newUrl)
-                                } else {
-                                    onShowPopup(newUrl, view)
-                                }
-                                return true
-                            }
-                        }
-                        return true
-                    }
-
-                    override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
-                        consoleMessage?.let {
-                            Log.d("WebViewConsole", "[${it.messageLevel()}] ${it.message()} -- ${it.sourceId()}:${it.lineNumber()}")
-                        }
-                        return super.onConsoleMessage(consoleMessage)
-                    }
-                }
-            }
-        },
-        modifier = modifier
-    )
-
-
-
-
-}
