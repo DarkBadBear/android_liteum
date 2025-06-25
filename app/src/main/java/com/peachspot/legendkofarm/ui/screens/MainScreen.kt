@@ -1,6 +1,6 @@
+// MainScreen.kt
 package com.peachspot.legendkofarm.ui.screens
 
-import com.peachspot.legendkofarm.R
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
@@ -8,45 +8,145 @@ import android.webkit.ValueCallback
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.google.firebase.auth.FirebaseAuth
+import com.peachspot.legendkofarm.R
 import com.peachspot.legendkofarm.data.db.AppDatabase
 import com.peachspot.legendkofarm.data.remote.client.NetworkClient.myApiService
-import com.peachspot.legendkofarm.data.repositiory.HomeRepository
 import com.peachspot.legendkofarm.data.repositiory.HomeRepositoryImpl
 import com.peachspot.legendkofarm.data.repositiory.UserPreferencesRepository
 import com.peachspot.legendkofarm.viewmodel.HomeViewModel
-import com.peachspot.legendkofarm.viewmodel.HomeViewModelFactory
-
 import com.peachspot.legendkofarm.ui.navigation.AppScreenRoutes
+
 
 data class BottomNavigationItem(
     val labelResId: Int, val iconResId: Int, val screenRoute: String
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainScreen(
+    navController: NavHostController,
+    homeViewModel: HomeViewModel,
+    onFileChooserRequest: (ValueCallback<Array<Uri>>, Intent) -> Unit
+) {
+    var selectedTab by rememberSaveable { mutableStateOf(0) }
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route ?: "home"
+
+    val navItems = listOf(
+        BottomNavigationItem(R.string.tab_label_building, R.drawable.ic_house, "home"),
+        BottomNavigationItem(R.string.tab_diary, R.drawable.ic_diary, "diary"),
+        BottomNavigationItem(R.string.tab_exchange, R.drawable.ic_exchange, "exchange"),
+        BottomNavigationItem(R.string.tab_news, R.drawable.ic_news, "news"),
+        BottomNavigationItem(R.string.tab_profile, R.drawable.ic_profile, "profile")
+    )
+
+    LaunchedEffect(currentRoute) {
+        selectedTab = when (currentRoute) {
+            "home" -> 0
+            "diary" -> 1
+            "exchange" -> 2
+            "news" -> 3
+            "profile", AppScreenRoutes.PROFILE_SCREEN -> 4
+            else -> selectedTab
+        }
+    }
+
+
+    Scaffold(
+        bottomBar = {
+            NavigationBar(containerColor = Color(0xFF535353)) {
+                navItems.forEachIndexed { index, item ->
+                    NavigationBarItem(
+                        icon = {
+                            Icon(
+                                painter = painterResource(id = item.iconResId),
+                                contentDescription = stringResource(id = item.labelResId),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        },
+                        label = { Text(stringResource(id = item.labelResId)) },
+                        selected = selectedTab == index,
+                        onClick = {
+                            selectedTab = index
+                            navController.navigate(item.screenRoute) {
+                                popUpTo("home") { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Color.White,
+                            unselectedIconColor = Color.Gray,
+                            selectedTextColor = Color.White,
+                            unselectedTextColor = Color.Gray,
+                            indicatorColor = Color.Transparent
+                        )
+                    )
+                }
+            }
+        }
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = "home",
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            composable("home") {
+                HomeScreen(
+                    navController = navController,
+                    viewModel = homeViewModel,
+                    onFileChooserRequest = onFileChooserRequest
+                )
+            }
+            composable("diary") {
+                DiaryScreen(
+                    navController = navController,
+                    viewModel = homeViewModel,
+                    onFileChooserRequest = onFileChooserRequest
+                )
+            }
+            composable("exchange") {
+                ExchangeScreen(
+                    navController = navController,
+                    viewModel = homeViewModel,
+                    onFileChooserRequest = onFileChooserRequest
+                )
+            }
+            composable("news") {
+                NewsScreen(
+                    navController = navController,
+                    viewModel = homeViewModel,
+                    onFileChooserRequest = onFileChooserRequest
+                )
+            }
+            composable("profile") {
+                ProfileScreen(
+                    navController = navController,
+                    viewModel = homeViewModel
+                )
+            }
+        }
+    }
+}
+
+
+/*
 //0c275a
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -190,3 +290,4 @@ fun AppNavHost(
     }
 }
 
+*/

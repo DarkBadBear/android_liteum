@@ -141,16 +141,20 @@ fun DiaryScreen(
 
                     Spacer(Modifier.height(24.dp)) // 상단 여백
 
-                    Text(text = "프로필에서 구글 연동 이후 사용가능 합니다.")
-
+                    Text(text = "구글 연동 이후 사용가능 합니다.")
+// MainScreen 내부에서 탭 간 이동
                     Button(
                         onClick = {
-                            navController.navigate(AppScreenRoutes.PROFILE_SCREEN)
+                            navController.navigate("profile") {
+                                launchSingleTop = true
+                                restoreState = true
+                                popUpTo("home") { saveState = true }
+                            }
                         }
-
                     ) {
                         Text("이동")
                     }
+
 
 
                 }
