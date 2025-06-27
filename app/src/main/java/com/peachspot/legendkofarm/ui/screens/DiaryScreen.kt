@@ -6,6 +6,8 @@ import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import android.webkit.*
+import android.widget.ImageView
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import com.peachspot.legendkofarm.R
@@ -141,8 +144,36 @@ fun DiaryScreen(
 
                     Spacer(Modifier.height(24.dp)) // 상단 여백
 
-                    Text(text = "구글 연동 이후 사용가능 합니다.")
-// MainScreen 내부에서 탭 간 이동
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp), // 아이콘 간 간격
+                        verticalAlignment = Alignment.CenterVertically,     // 수직 중앙 정렬
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.notebook_pen),
+                            contentDescription = "Icon 1",
+                            modifier = Modifier.size(48.dp)
+                        )
+
+                        Image(
+                            painter = painterResource(id = R.drawable.ellipsis),
+                            contentDescription = "Icon 2",
+                            modifier = Modifier.size(48.dp)
+                        )
+
+                        Image(
+                            painter = painterResource(id = R.drawable.database),
+                            contentDescription = "Icon 3",
+                            modifier = Modifier.size(48.dp)
+                        )
+                    }
+
+
+
+                    Spacer(Modifier.height(24.dp)) // 상단 여백
+
+                    Text(text = "구글 연동 이후 사용가능 합니다.") // MainScreen 내부에서 탭 간 이동
+
                     Button(
                         onClick = {
                             navController.navigate("profile") {
