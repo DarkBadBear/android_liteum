@@ -59,7 +59,7 @@ private fun handleCustomUrl(context: Context, view: WebView?, url: String): Bool
             val intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME)
             val packageName = intent.`package`
             var storeUrl: String? = null
-
+            Log.d("nicap AAAAAAAAAAAA","inside handdle" );
             when {
                 url.contains("ispmobile") -> {
                     storeUrl = "http://mobile.vpay.co.kr/jsp/MISP/andown.jsp"
@@ -88,12 +88,14 @@ private fun handleCustomUrl(context: Context, view: WebView?, url: String): Bool
                 }
             }
             true
+
         } else {
+
             if (shouldOpenInExternalBrowser(view?.url, url)) {
+                Log.d("nicap AAAAAAAAAAAA","123" );
                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                 true
             } else {
-
                 view?.loadUrl(url) // 이 한 줄이 있어야 내부 WebView가 처리함!
                 return true
             }
@@ -132,11 +134,21 @@ private fun shouldOpenInExternalBrowser(currentWebViewUrl: String?, targetUrl: S
     return try {
         val currentUri = URI(currentWebViewUrl ?: "")
         val targetUri = URI(targetUrl ?: "")
-        currentUri.host != targetUri.host
-    } catch (_: Exception) {
+
+        val currentHost = currentUri.host ?: ""
+        val targetHost = targetUri.host ?: ""
+
+        if (currentHost.isEmpty() || targetHost.isEmpty()) {
+            // 호스트가 없으면 외부 브라우저로 열자 (또는 내부 처리 원하면 false로)
+            true
+        } else {
+            currentHost != targetHost
+        }
+    } catch (e: Exception) {
         true
     }
 }
+
 
 
 
@@ -189,6 +201,17 @@ fun CommonWebView(
             SwipeRefreshLayout(context).apply {
                 isEnabled = false
 
+                    WebView(context).apply {
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            settings.javaScriptCanOpenWindowsAutomatically = true
+            settings.setSupportMultipleWindows(true)
+           settings.loadWithOverviewMode = true
+            settings.useWideViewPort = true
+
+        }
+
+
                 setOnRefreshListener {
                     isRefreshing = true
                     webView.reload()
@@ -215,10 +238,10 @@ fun CommonWebView(
                         )
                     }
 
-//                    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-//                        val url = request?.url.toString()
-//                        return handleCustomUrl(context, view, url)
-//                    }
+                    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                        val url = request?.url.toString()
+                        return handleCustomUrl(context, view, url)
+                    }
                 }
 
                 webView.webChromeClient = object : WebChromeClient() {
@@ -262,6 +285,7 @@ fun CommonWebView(
                             settings.setSupportMultipleWindows(false)
 
                             webViewClient = object : WebViewClient() {
+
                                 override fun shouldOverrideUrlLoading(wv: WebView, req: WebResourceRequest): Boolean {
                                     val url = req.url.toString()
                                     val baseUrl = mainWebView.url ?: CommonWebViewState.lastKnownUrl ?: ""
@@ -269,7 +293,9 @@ fun CommonWebView(
                                     return when {
                                         // 1. 외부 URL → handleCustomUrl로 처리
                                         handleCustomUrl(context, mainWebView, url) -> {
-                                            wv.destroy()
+                                            wv.post {
+                                                wv.destroy()
+                                            }
                                             true
                                         }
 
@@ -283,10 +309,11 @@ fun CommonWebView(
                                         // 3. 다른 도메인 → 새창 유지 (childWebView 그대로)
                                         else -> false
                                     }
+
                                 }
                             }
 
-                            webChromeClient = object : WebChromeClient() {} // 내부 팝업 방지용
+                                  webChromeClient = object : WebChromeClient() {} // 내부 팝업 방지용
                         }
 
                         val transport = resultMsg?.obj as? WebView.WebViewTransport ?: return false

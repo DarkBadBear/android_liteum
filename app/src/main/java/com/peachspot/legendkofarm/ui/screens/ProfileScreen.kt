@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
@@ -149,8 +150,8 @@ fun ProfileScreen(
         drawerContent = {
             ModalDrawerSheet {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("오르기 legendkofarm ", style = MaterialTheme.typography.titleMedium)
-                    Text("올라가는 운동을 위한\n기록용 앱입니다.\n운동기록을 솔직하게 기록하시면\n됩니다.")
+                    Text("전설의 농부", style = MaterialTheme.typography.titleLarge)
+                    Text("농업 생산활동을 향상 시키는  앱입니다.")
                     Spacer(modifier = Modifier.height(8.dp))
 
 
@@ -239,17 +240,19 @@ fun ProfileScreen(
             ) {
                 Spacer(Modifier.height(40.dp)) // 하단 여백
 
-
-
-                Text(
-                    text = stringResource(R.string.profile_google_sync_description),
-                    style = TextStyle(
-                        color = Color(0xFFCCCCCC),
-                        fontSize = 16.sp // Example: Set font size as well
+                if (!uiState.isUserLoggedIn) {
+                    Text(
+                        text = "작업일지는 구글 연동후 사용가능합니다.",
+                        style = TextStyle(
+                            color = Color(0xFFCCCCCC),
+                            fontSize = 16.sp // Example: Set font size as well
+                        )
                     )
-                )
+                }else{
+                    Text(text="로그인이 되었습니다.\n작업일지를 사용할 수 있습니다.",   fontSize = 16.sp);
+                }
 
-                Spacer(Modifier.height(24.dp)) // 상단 여백
+                Spacer(Modifier.height(14.dp)) // 상단 여백
                 when {
                     uiState.isLoading -> CircularProgressIndicator()
                     uiState.isUserLoggedIn -> LoggedInUserProfile(
@@ -327,11 +330,23 @@ fun ProfileScreen(
 //                            Text("[가져오기]")
 //                        }
 
-                        TextButton(
-                            onClick = { showExitDialog = true },
-                            enabled = uiState.isUserLoggedIn
-                        ) {
-                            Text("[계정 삭제]")
+
+                        Column (
+                            modifier = Modifier,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ){
+
+                            Spacer(Modifier.height(100.dp)) // 상단 여백
+
+                            Text(text="작업일지,자금관리를 삭제하시려면 \n[계정 삭제] 버튼을 눌러주세요.",  );
+                            Spacer(Modifier.height(10.dp)) // 상단 여백
+                            Button(
+                                onClick = { showExitDialog = true },
+                                enabled = uiState.isUserLoggedIn
+                            ) {
+                                Text("[계정 삭제]")
+                            }
+
                         }
                     }
                 }

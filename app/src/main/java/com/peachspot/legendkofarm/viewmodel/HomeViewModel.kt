@@ -77,7 +77,21 @@ class HomeViewModel (
     private val webViewMap = mutableMapOf<String, WebView>()
 
     fun refreshWebView(tag: String) {
-        webViewMap[tag]?.reload()
+
+        val url = when(tag.lowercase()) {
+            "news" -> "https://urdesk.co.kr/smartkofarmnews/"
+            "home" ->"https://urdesk.co.kr/smartkofarm/"
+            "diary" -> "https://urdesk.co.kr/smartkofarmdiary/"
+            "exchange" -> "https://urdesk.co.kr/smartkofarmexchange/"
+            else -> "refresh"           // 기본 URL (필요하면)
+        }
+
+            if(url == "refresh") {
+                webViewMap[tag]?.reload()
+            }else{
+                webViewMap[tag]?.loadUrl(url)
+            }
+
     }
 
     fun getOrCreateWebView(context: Context, tag: String, url: String): WebView {
