@@ -271,14 +271,13 @@ class MainActivity : ComponentActivity() {
             }
 
             LaunchedEffect(Unit) {
-                //checkAppVersion()
-              //  registerAppToken()
+                checkAppVersion()
+                registerAppToken()
             }
 
 
         }
 
-        ///requestLocationPermissionIfNeeded()
         requestNotificationPermissionIfNeeded() // 알림 권한 요청 함수 호출  알림 권한 받고나서야 위치권한 받게 하려면?
     }
 
@@ -313,13 +312,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-
-        val context = this
-        val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
-        val currentUser = FirebaseAuth.getInstance().currentUser
-
-        Log.d("디버깅", "Android ID: $androidId")
-        Log.d("디버깅", "currentUser: ${currentUser?.email ?: "null"}")
 
         LocalBroadcastManager.getInstance(this).registerReceiver(
             foregroundMessageReceiver,
@@ -408,30 +400,30 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun registerAppToken() {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: "no_user"
+
         FirebaseMessaging.getInstance().getToken()
-            .addOnCompleteListener(object : OnCompleteListener<String?> {
-                public override fun onComplete(task: Task<String?>) {
-                    // Get new FCM registration token
-                    val token: String? = task.getResult()
-                    this@MainActivity.send_token(token)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val token = task.result
+                    send_token_with_uid(token, uid)
+                } else {
+                    Log.e("MainActivity", "FCM 토큰 가져오기 실패", task.exception)
                 }
-            })
+            }
     }
 
-    fun send_token(token: String?) {
-        if (token?.isEmpty() == true) {
-            return
-        }
+    private fun send_token_with_uid(token: String?, uid: String) {
+        if (token.isNullOrEmpty()) return
 
-        /*CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             try {
-                val AppToken = mapOf("token" to token)
-                val response = myApiService.registerDevice("AppToken", token.toString())
+                val data = mapOf("token" to token, "uid" to uid)
+                val response = myApiService.registerDevice("AppToken", token,uid)
             } catch (e: Exception) {
                 Log.e("Main", "Exception while sending token to server.", e)
             }
-        }*/
-
+        }
     }
 
 //

@@ -135,6 +135,7 @@ class HomeViewModel (
     init {
         Logger.d("ProfileViewModel", "ViewModel 초기화 시작.")
         viewModelScope.launch {
+            delay(300);
             checkCurrentUser()
         }
             Logger.d("ProfileViewModel", "ViewModel 초기화 완료.")
