@@ -43,18 +43,7 @@ fun NewsScreen(
 //
 //    val coroutineScope = rememberCoroutineScope()
 //    var isRefreshing by remember { mutableStateOf(false) }
-//
-//    val webView = remember {
-//        WebView(context).apply {
-//            settings.javaScriptEnabled = true
-//            settings.domStorageEnabled = true
-//            settings.javaScriptCanOpenWindowsAutomatically = true
-//            settings.setSupportMultipleWindows(true)
-//            settings.loadWithOverviewMode = true
-//            settings.useWideViewPort = true
-//            loadUrl("https://urdesk.co.kr/legendkofarm/diary")
-//        }
-//    }
+
 
     LaunchedEffect(uiState.userMessage) {
         uiState.userMessage?.let { message ->
@@ -66,28 +55,10 @@ fun NewsScreen(
         }
     }
 
-//
-//
-//    if (showAlert) {
-//        AlertDialog(
-//            onDismissRequest = {
-//                jsAlertResult?.cancel()
-//                showAlert = false
-//            },
-//            title = { Text("알림") },
-//            text = { Text(alertMessage ?: "") },
-//            confirmButton = {
-//                TextButton(onClick = {
-//                    jsAlertResult?.confirm()
-//                    showAlert = false
-//                }) {
-//                    Text("확인")
-//                }
-//            }
-//        )
-//    }
-
     Scaffold(
+        contentWindowInsets = WindowInsets(0), // ← 상하 모두 insets 제거
+        containerColor = Color.White, // Scaffold 배경
+
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { snackbarData ->
                 val containerColor = when (uiState.userMessageType) {
@@ -116,10 +87,7 @@ fun NewsScreen(
                     viewModel.refreshWebView("news")
                 },
                 onTitleClick = {
-                    // 👉 홈 화면으로 이동
-//                    navController.navigate("home_tab_host") {
-//                     //   popUpTo("home") { inclusive = true }
-//                    }
+
                 }
             )
         }

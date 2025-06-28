@@ -1,6 +1,7 @@
 package com.peachspot.legendkofarm.ui.theme
 
 import android.os.Build
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -11,7 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun legendkofarmiTheme( // PascalCase for Composable functions
-    useDarkTheme: Boolean = false,// isSystemInDarkTheme(), // More descriptive parameter name
+    useDarkTheme: Boolean = isSystemInDarkTheme(), // More descriptive parameter name
     // Dynamic color is available on Android 12+
     useDynamicColor: Boolean = true, // More descriptive parameter name
     content: @Composable () -> Unit

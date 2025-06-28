@@ -67,6 +67,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
+import android.provider.Settings
 
 ///@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -131,9 +132,6 @@ class MainActivity : ComponentActivity() {
         )
            setupRemoteConfig()
 
-
-
-
         fileChooserLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             //val resultUri = result.data?.data
             val resultUri = result.data?.data ?: imageUri // <-- 중요!
@@ -144,9 +142,6 @@ class MainActivity : ComponentActivity() {
             }
             filePathCallback = null
         }
-
-
-
 
 
         val onBackPressedCallback = object : OnBackPressedCallback(true) {
@@ -164,9 +159,8 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             legendkofarmiTheme {
-
-                val application = LocalContext.current.applicationContext as Application
                 val navController = rememberNavController()
+                val application = LocalContext.current.applicationContext as Application
                 val context = LocalContext.current.applicationContext as Application
                 val database = remember { AppDatabase.getInstance(context) }
                 val userPrefs = remember { UserPreferencesRepository(context) }
@@ -277,8 +271,8 @@ class MainActivity : ComponentActivity() {
             }
 
             LaunchedEffect(Unit) {
-                checkAppVersion()
-                ////registerAppToken()
+                //checkAppVersion()
+              //  registerAppToken()
             }
 
 
@@ -319,10 +313,19 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+
+        val context = this
+        val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+        val currentUser = FirebaseAuth.getInstance().currentUser
+
+        Log.d("디버깅", "Android ID: $androidId")
+        Log.d("디버깅", "currentUser: ${currentUser?.email ?: "null"}")
+
         LocalBroadcastManager.getInstance(this).registerReceiver(
             foregroundMessageReceiver,
             IntentFilter(MyFirebaseMessagingService.ACTION_FOREGROUND_MESSAGE)
         )
+
     }
 
     override fun onStop() {
@@ -404,32 +407,32 @@ class MainActivity : ComponentActivity() {
             }
     }
 
-//    private fun registerAppToken() {
-//
-//        FirebaseMessaging.getInstance().getToken()
-//            .addOnCompleteListener(object : OnCompleteListener<String?> {
-//                public override fun onComplete(task: Task<String?>) {
-//                    // Get new FCM registration token
-//                    val token: String? = task.getResult()
-//                    this@MainActivity.send_token(token)
-//                }
-//            })
-//    }
+    private fun registerAppToken() {
+        FirebaseMessaging.getInstance().getToken()
+            .addOnCompleteListener(object : OnCompleteListener<String?> {
+                public override fun onComplete(task: Task<String?>) {
+                    // Get new FCM registration token
+                    val token: String? = task.getResult()
+                    this@MainActivity.send_token(token)
+                }
+            })
+    }
 
-//    fun send_token(token: String?) {
-//        if (token?.isEmpty() == true) {
-//            return
-//        }
-//
-//        CoroutineScope(Dispatchers.IO).launch {
-//            try {
-//                val AppToken = mapOf("token" to token)
-//                val response = myApiService.registerDevice("AppToken", token.toString())
-//            } catch (e: Exception) {
-//                Log.e("Main", "Exception while sending token to server.", e)
-//            }
-//        }
-//    }
+    fun send_token(token: String?) {
+        if (token?.isEmpty() == true) {
+            return
+        }
+
+        /*CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val AppToken = mapOf("token" to token)
+                val response = myApiService.registerDevice("AppToken", token.toString())
+            } catch (e: Exception) {
+                Log.e("Main", "Exception while sending token to server.", e)
+            }
+        }*/
+
+    }
 
 //
     private fun checkAppVersion() {

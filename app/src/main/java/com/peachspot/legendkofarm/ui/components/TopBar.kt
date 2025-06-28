@@ -5,7 +5,11 @@ package com.peachspot.legendkofarm.ui.components
 //import androidx.compose.ui.graphics.Color // 직접 색상 지정 대신 MaterialTheme 사용 권장
 import android.view.SoundEffectConstants
 import androidx.compose.foundation.clickable
+
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -23,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 
 
@@ -42,11 +47,13 @@ fun MyAppTopBar(
 
     val view = LocalView.current
     TopAppBar(
-        title = { Text( text = title,
+        title = {
+            Text( text = title,
             modifier = Modifier.clickable {
                 view.playSoundEffect(SoundEffectConstants.CLICK)
                 onTitleClick()
-            }
+            }.padding(top = 12.dp)  // 상단 패딩만 12dp 주기
+
         ) },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color(0xFF535353),// MaterialTheme 색상 사용 예시
@@ -61,20 +68,24 @@ fun MyAppTopBar(
          },
         actions = {
             TextButton(onClick = onRefreshClicked) {
-                Icon(Icons.Default.Refresh, contentDescription = "화면 새로고침" ,tint = Color.White )
+                Icon(Icons.Default.Refresh, contentDescription = "화면 새로고침" ,tint = Color.White ,modifier = Modifier.padding(top = 8.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("화면 새로고침",color=Color.White)
+                Text("화면 새로고침",color=Color.White,
+                    modifier = Modifier.padding(top = 8.dp)) // 상단 패딩만 12dp 주기)
             }
 
             IconButton(onClick = {
                 view.playSoundEffect(SoundEffectConstants.CLICK)
                 onNotificationClick()
             }) {
-                Icon(Icons.Default.Notifications, contentDescription = "알림",tint = Color.White )
+                Icon(Icons.Default.Notifications, contentDescription = "알림",tint = Color.White ,
+                    modifier = Modifier.padding(top = 7.dp)  // 상단 패딩만 12dp 주기
+                    )
             }
 
         },
-        modifier = modifier
+        modifier = modifier.height(54.dp),
+        windowInsets = WindowInsets(0), //
     )
 }
 
@@ -85,13 +96,22 @@ fun HomeTopAppBar(
     title: String = "",
     onMenuClick: () -> Unit = {}, // 이 부분이 중요!
     modifier: Modifier = Modifier,
+    onTitleClick: () -> Unit ,
 ) {
     val view = LocalView.current
     TopAppBar(
-        title = { Text(text = title) },
+
+        title = {
+            Text( text = title,
+                modifier = Modifier.clickable {
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                    onTitleClick()
+                }.padding(top = 12.dp)
+
+        ) },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color(0xFFf2f3f9)// MaterialTheme 색상 사용 예시
-            // titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            containerColor = Color(0xFF535353),// MaterialTheme 색상 사용 예시
+            titleContentColor = Color.White
         ),
         navigationIcon = { // 메뉴 아이콘
 
@@ -103,11 +123,13 @@ fun HomeTopAppBar(
             }) {
                 Icon(
                     imageVector = Icons.Filled.Menu,
-                    contentDescription = "네비게이션 메뉴 열기"
+                    contentDescription = "네비게이션 메뉴 열기",
+                    modifier = Modifier.padding(top = 7.dp)  // 상단 패딩만 12dp 주기
                 )
             }
         },
-        modifier = modifier
+        modifier = modifier.height(54.dp),
+        windowInsets = WindowInsets(0), //
     )
 }
 
