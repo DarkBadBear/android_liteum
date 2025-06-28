@@ -57,6 +57,7 @@ import com.peachspot.legendkofarm.data.remote.client.NetworkClient.myApiService
 import com.peachspot.legendkofarm.data.repositiory.HomeRepositoryImpl
 import com.peachspot.legendkofarm.data.repositiory.UserPreferencesRepository
 import com.peachspot.legendkofarm.services.MyFirebaseMessagingService
+import com.peachspot.legendkofarm.ui.navigation.AppScreenRoutes
 import com.peachspot.legendkofarm.ui.screens.MainScreen
 import com.peachspot.legendkofarm.ui.screens.NotificationScreen
 import com.peachspot.legendkofarm.ui.theme.legendkofarmiTheme
@@ -66,6 +67,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
+import android.provider.Settings
 
 ///@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -125,13 +127,10 @@ class MainActivity : ComponentActivity() {
 
         handleIntent(intent)
         FirebaseApp.initializeApp(this)
-//        Firebase.appCheck.installAppCheckProviderFactory(
-//            PlayIntegrityAppCheckProviderFactory.getInstance()
-//        )
-            //setupRemoteConfig()
-
-
-
+        Firebase.appCheck.installAppCheckProviderFactory(
+            PlayIntegrityAppCheckProviderFactory.getInstance()
+        )
+           setupRemoteConfig()
 
         fileChooserLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             //val resultUri = result.data?.data
@@ -143,9 +142,6 @@ class MainActivity : ComponentActivity() {
             }
             filePathCallback = null
         }
-
-
-
 
 
         val onBackPressedCallback = object : OnBackPressedCallback(true) {
@@ -163,11 +159,8 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             legendkofarmiTheme {
-
-                // ViewModel 인스턴스 생성 (Hilt 미사용)
-                // 예시: MainScreen.kt에서 ViewModel을 생성하는 방식을 따르거나, Application 인스턴스를 전달
-                val application = LocalContext.current.applicationContext as Application
                 val navController = rememberNavController()
+                val application = LocalContext.current.applicationContext as Application
                 val context = LocalContext.current.applicationContext as Application
                 val database = remember { AppDatabase.getInstance(context) }
                 val userPrefs = remember { UserPreferencesRepository(context) }
@@ -184,9 +177,6 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 val homeViewModel: HomeViewModel = viewModel(factory = viewModelFactory)
-
-
-
 
                 MainScreen(
                     navController = navController,
@@ -281,12 +271,13 @@ class MainActivity : ComponentActivity() {
             }
 
             LaunchedEffect(Unit) {
-                checkAppVersion()
-                registerAppToken()
+                //checkAppVersion()
+              //  registerAppToken()
             }
 
 
         }
+
         ///requestLocationPermissionIfNeeded()
         requestNotificationPermissionIfNeeded() // 알림 권한 요청 함수 호출  알림 권한 받고나서야 위치권한 받게 하려면?
     }
@@ -322,10 +313,19 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+
+        val context = this
+        val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+        val currentUser = FirebaseAuth.getInstance().currentUser
+
+        Log.d("디버깅", "Android ID: $androidId")
+        Log.d("디버깅", "currentUser: ${currentUser?.email ?: "null"}")
+
         LocalBroadcastManager.getInstance(this).registerReceiver(
             foregroundMessageReceiver,
             IntentFilter(MyFirebaseMessagingService.ACTION_FOREGROUND_MESSAGE)
         )
+
     }
 
     override fun onStop() {
@@ -386,29 +386,28 @@ class MainActivity : ComponentActivity() {
     }
 
 
-//    private fun setupRemoteConfig() {
-//        val remoteConfig = Firebase.remoteConfig
-//        val configSettings = remoteConfigSettings {
-//            minimumFetchIntervalInSeconds =
-//                if (com.peachspot.legendkofarm.BuildConfig.DEBUG) {
-//                    0
-//                } else {
-//                    3600
-//                }
-//        }
-//        remoteConfig.setConfigSettingsAsync(configSettings)
-//        remoteConfig.setDefaultsAsync(R.xml.remote_config_defaults)
-//            .addOnCompleteListener { task ->
-//                if (task.isSuccessful) {
-//                    Log.d(TAG, "Remote Config defaults loaded.")
-//                } else {
-//                    Log.e(TAG, "Failed to load Remote Config defaults.", task.exception)
-//                }
-//            }
-//    }
+    private fun setupRemoteConfig() {
+        val remoteConfig = Firebase.remoteConfig
+        val configSettings = remoteConfigSettings {
+            minimumFetchIntervalInSeconds =
+                if (com.peachspot.legendkofarm.BuildConfig.DEBUG) {
+                    0
+                } else {
+                    3600
+                }
+        }
+        remoteConfig.setConfigSettingsAsync(configSettings)
+        remoteConfig.setDefaultsAsync(R.xml.remote_config_defaults)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    Log.d(TAG, "Remote Config defaults loaded.")
+                } else {
+                    Log.e(TAG, "Failed to load Remote Config defaults.", task.exception)
+                }
+            }
+    }
 
     private fun registerAppToken() {
-
         FirebaseMessaging.getInstance().getToken()
             .addOnCompleteListener(object : OnCompleteListener<String?> {
                 public override fun onComplete(task: Task<String?>) {
@@ -424,14 +423,15 @@ class MainActivity : ComponentActivity() {
             return
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
+        /*CoroutineScope(Dispatchers.IO).launch {
             try {
                 val AppToken = mapOf("token" to token)
                 val response = myApiService.registerDevice("AppToken", token.toString())
             } catch (e: Exception) {
                 Log.e("Main", "Exception while sending token to server.", e)
             }
-        }
+        }*/
+
     }
 
 //
@@ -475,6 +475,8 @@ class MainActivity : ComponentActivity() {
                 }
             }
     }
+
+//
 @Composable
 fun AppNavHost(
     onFileChooserRequest: (ValueCallback<Array<Uri>>, Intent) -> Unit
@@ -507,15 +509,12 @@ fun AppNavHost(
         }
 
         // 탭 외부 화면
-        composable("notification_screen_route") {
+        composable(AppScreenRoutes.NOTIFICATION_SCREEN) {
             NotificationScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-//
-//        composable("some_profile_detail") {
-//            ProfileDetailScreen()
-//        }
+
     }
 }
 

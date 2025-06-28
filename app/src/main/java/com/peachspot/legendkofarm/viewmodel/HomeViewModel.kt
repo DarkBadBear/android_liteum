@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
+import android.util.Log
 import android.webkit.WebView
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
@@ -19,6 +20,7 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingExcept
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.messaging.FirebaseMessaging
 import com.google.gson.Gson
 import com.peachspot.legendkofarm.data.remote.api.MyApiService
 import com.peachspot.legendkofarm.data.repositiory.HomeRepository
@@ -33,9 +35,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import com.peachspot.legendkofarm.R
+import com.peachspot.legendkofarm.data.remote.client.NetworkClient
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+import android.app.Activity
 
 data class HomeUiState(
     val errorMessage: String? = null,
@@ -128,10 +134,10 @@ class HomeViewModel (
 
     init {
         Logger.d("ProfileViewModel", "ViewModel 초기화 시작.")
-        checkCurrentUser()
-
-        Logger.d("ProfileViewModel", "ViewModel 초기화 완료.")
-
+        viewModelScope.launch {
+            checkCurrentUser()
+        }
+            Logger.d("ProfileViewModel", "ViewModel 초기화 완료.")
 
         viewModelScope.launch { // Launch a coroutine here
             userPreferencesRepository.agreeFlow.collect { agreeStatus ->
@@ -142,21 +148,25 @@ class HomeViewModel (
         }
     }
 
-
+/*
     private fun checkCurrentUser() {
         Logger.d("ProfileViewModel", "현재 사용자 확인 중")
+
+
         val firebaseUser = firebaseAuth.currentUser
+
         if (firebaseUser != null) {
             viewModelScope.launch {
+
                 try {
-                    val tokenResult = firebaseUser.getIdToken(true).await()
+                    val tokenResult = firebaseUser.getIdToken(false).await()
                     val idToken = tokenResult.token
                     _uiState.update {
                         it.copy(
                             isUserLoggedIn = true,
-                            userName = firebaseUser.displayName,
-                            userEmail = firebaseUser.email,
-                            userPhotoUrl = firebaseUser.photoUrl?.toString(),
+//                            userName = firebaseUser.displayName,
+//                            userEmail = firebaseUser.email,
+//                            userPhotoUrl = firebaseUser.photoUrl?.toString(),
                             idToken = idToken,
                             firebaseUid = firebaseUser.uid,
                             isLoading = false
@@ -193,7 +203,124 @@ class HomeViewModel (
             Logger.d("ProfileViewModel", "현재 로그인된 사용자 없음.")
         }
     }
+*/
 
+    private fun checkCurrentUser() {
+        Logger.d("ProfileViewModel", "현재 사용자 확인 중")
+
+        val firebaseUser = firebaseAuth.currentUser
+
+        if (firebaseUser != null) {
+            viewModelScope.launch {
+                // 🔍 로컬에 저장된 UID 가져오기
+                val storedUid = userPreferencesRepository.userProfileDataFlow.firstOrNull()?.firebaseUid
+                val currentUid = firebaseUser.uid
+
+                // ✅ UID 불일치 시 로컬 데이터 초기화
+                if (storedUid != null && storedUid != currentUid) {
+                    Logger.w("ProfileViewModel", "Firebase UID와 로컬 UID 불일치 → 로컬 초기화")
+                    userPreferencesRepository.clearUserProfileData()
+                }
+
+                try {
+                    val tokenResult = firebaseUser.getIdToken(false).await()
+                    val idToken = tokenResult.token
+
+                    _uiState.update {
+                        it.copy(
+                            isUserLoggedIn = true,
+                            idToken = idToken,
+                            firebaseUid = currentUid,
+                            isLoading = false
+                        )
+                    }
+                    Logger.d("ProfileViewModel", "현재 사용자 확인됨, ID 토큰 갱신: $idToken")
+
+                } catch (e: Exception) {
+                    Logger.e("ProfileViewModel", "ID 토큰 갱신 실패", e)
+
+                    _uiState.update {
+                        it.copy(
+                            isUserLoggedIn = true,
+                            userName = firebaseUser.displayName,
+                            userEmail = firebaseUser.email,
+                            userPhotoUrl = firebaseUser.photoUrl?.toString(),
+                            idToken = null,
+                            isLoading = false,
+                            userMessage = "세션 정보를 가져오는 데 실패했습니다.",
+                            userMessageType = "error"
+                        )
+                    }
+                }
+            }
+        } else {
+            _uiState.update {
+                it.copy(
+                    isUserLoggedIn = false,
+                    userName = null,
+                    userEmail = null,
+                    userPhotoUrl = null,
+                    idToken = null,
+                    isLoading = false
+                )
+            }
+            Logger.d("ProfileViewModel", "현재 로그인된 사용자 없음.")
+        }
+    }
+
+
+    fun startGoogleSignIn() {
+        Logger.d("ProfileViewModel", "startGoogleSignIn 호출됨")
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                userMessage = null,
+                signInPendingIntent = null
+            )
+        }
+        viewModelScope.launch {
+            try {
+                val request = GetCredentialRequest.Builder()
+                    .addCredentialOption(googleIdOption)
+                    .build()
+                Logger.d("ProfileViewModel", "CredentialManager에 credential 요청 중")
+
+//                val result: GetCredentialResponse =  credentialManager.getCredential(request = request, context = activity)
+
+                val result: GetCredentialResponse = credentialManager.getCredential(request = request, context = application)
+
+                Logger.d("ProfileViewModel", "Credential을 직접 수신함.")
+                handleSignInCredential(result.credential)
+            } catch (e: GetCredentialException) {
+                Logger.e(
+                    "ProfileViewModel",
+                    "startGoogleSignIn - GetCredentialException: ${e.javaClass.simpleName}",
+                    e
+                )
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        userMessage = "웁스 로그인 실패.. 다시 한번 시도하여 주세요.",
+                        userMessageType = "error",
+                        signInPendingIntent = null
+                    )
+                }
+            } catch (e: Exception) {
+                Logger.e("ProfileViewModel", "startGoogleSignIn - 일반 예외", e)
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        userMessage = "로그인 중 알 수 없는 오류 발생: ${e.localizedMessage}",
+                        signInPendingIntent = null
+                    )
+                }
+            }
+        }
+    }
+
+
+
+    /*
     fun startGoogleSignIn() {
         Logger.d("ProfileViewModel", "startGoogleSignIn 호출됨")
         _uiState.update {
@@ -209,12 +336,16 @@ class HomeViewModel (
                     .addCredentialOption(googleIdOption)
                     .build()
                 Logger.d("ProfileViewModel", "CredentialManager에 credential 요청 중")
-                // 이 호출은 credential을 바로 반환하거나, 사용자 상호작용이 필요하면 예외를 발생시킬 수 있습니다.
+
+
+
                 val result: GetCredentialResponse =
                     credentialManager.getCredential(request = request, context = application)
+
                 Logger.d("ProfileViewModel", "Credential을 직접 수신함.")
                 handleSignInCredential(result.credential)
             } catch (e: GetCredentialException) {
+
                 Logger.e(
                     "ProfileViewModel",
                     "startGoogleSignIn - GetCredentialException: ${e.javaClass.simpleName}",
@@ -224,7 +355,7 @@ class HomeViewModel (
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        userMessage = "Google 로그인 실패,플레이스토어에서 로그인을 하고 시작하세요",
+                        userMessage = "웁스 로그인 실패.. 다시 한번 시도하여 주세요.",
                         userMessageType = "error",
                         signInPendingIntent = null
                     )
@@ -239,16 +370,9 @@ class HomeViewModel (
                     )
                 }
             }
-
-            val gson = Gson()
-            val dump =  "";
-                sendJsonToServer("regUid", gson.toJson(dump)) // 이 함수는 내부적으로 UI 상태를 업데이트합니다.
-
         }
-
     }
-
-    // ProfileScreen에서 IntentSender (PendingIntent) 실행 후 결과를 받아 호출되는 함수
+    */// ProfileScreen에서 IntentSender (PendingIntent) 실행 후 결과를 받아 호출되는 함수
     fun handleSignInActivityResult(data: Intent?) {
         Logger.d("ProfileViewModel", "handleSignInActivityResult 호출됨, data: $data")
         _uiState.update { it.copy(isLoading = true, userMessage = null) }
@@ -292,20 +416,17 @@ class HomeViewModel (
             }
         }
     }
-
-
     fun handleSignInCredential(credential: androidx.credentials.Credential) {
         Logger.d("ProfileViewModel", "handleSignInCredential 호출됨, type: ${credential.type}")
         if (!uiState.value.isLoading) {
             _uiState.update { it.copy(isLoading = true, userMessage = null) }
         }
+
         viewModelScope.launch {
             try {
                 // credential.type을 직접 비교하고, 안전한 캐스팅을 시도합니다.
                 if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                    // GoogleIdTokenCredential로 캐스팅합니다.
-                    // createFrom() 또는 CredentialManager에서 반환된 credential 객체는
-                    // 이 타입일 것으로 예상됩니다.
+
                     val googleIdTokenCredential =
                         GoogleIdTokenCredential.createFrom(credential.data)
 
@@ -358,31 +479,23 @@ class HomeViewModel (
         }
     }
 
-    // UI에서 signInPendingIntent를 실행한 후 호출
-    fun onSignInLaunched() {
-        Logger.d("ProfileViewModel", "onSignInLaunched 호출됨, signInPendingIntent 초기화.")
-        _uiState.update { it.copy(signInPendingIntent = null) }
-    }
-
-    // 인텐트 실행 실패 또는 다른 이유로 signInPendingIntent를 초기화할 때 호출
-    fun clearSignInPendingIntent() {
-        Logger.d("ProfileViewModel", "clearSignInPendingIntent 호출됨.")
-        _uiState.update { it.copy(signInPendingIntent = null, isLoading = false) }
-    }
 
     private fun firebaseAuthWithGoogleToken(idToken: String) {
+
         val authCredential = GoogleAuthProvider.getCredential(idToken, null)
+
         viewModelScope.launch {
             try {
                 val authResult = firebaseAuth.signInWithCredential(authCredential).await()
                 val firebaseUser = authResult.user
+
                 if (firebaseUser != null) {
-                    val tokenResult = firebaseUser.getIdToken(true).await() // ID 토큰 강제 갱신
-                    val firebaseIdToken = tokenResult.token
+//                    val tokenResult = firebaseUser.getIdToken(false).await() // ID 토큰 강제 갱신
+//                    val firebaseIdToken = tokenResult.token
                     val firebaseUid = firebaseUser.uid
 
                     val userProfileToSave = UserProfileData(
-//                        googleId = null, // Google ID는 현재 가져오지 않으므로 null 또는 다른 적절한 값
+                        googleId = null, // Google ID는 현재 가져오지 않으므로 null 또는 다른 적절한 값
 //                        name = userName,
 //                        email = userEmail,
 //                        photoUrl = userPhotoUrl,
@@ -390,20 +503,26 @@ class HomeViewModel (
                     )
                     userPreferencesRepository.saveUserProfileData(userProfileToSave) // 생성한 객체를 전달
 
+
                     _uiState.update {
                         it.copy(
                             isUserLoggedIn = true,
-                            userName = firebaseUser.displayName,
-                            userEmail = firebaseUser.email,
-                            userPhotoUrl = firebaseUser.photoUrl?.toString(),
+                            //userName = firebaseUser.displayName,
+                            //userEmail = firebaseUser.email,
+                            //userPhotoUrl = firebaseUser.photoUrl?.toString(),
                             isLoading = false,
                             firebaseUid = firebaseUid,
                             userMessage = "로그인 되었습니다."
                         )
                     }
 
-
-
+                    val fcmToken = FirebaseMessaging.getInstance().token.await()
+                    if (!fcmToken.isNullOrBlank()) {
+                        NetworkClient.myApiService.registerUser("AppToken", firebaseUid, fcmToken)
+                    }else{
+                        Logger.e("ProfileViewModel", "FCM 토큰이 null 또는 빈 문자열입니다.")
+                    }
+                    Logger.e("ProfileViewModel", "로그인 성공")
                 } else {
                     throw IllegalStateException("Firebase User is null after successful sign in.")
                 }
@@ -423,15 +542,27 @@ class HomeViewModel (
         }
     }
 
+    // UI에서 signInPendingIntent를 실행한 후 호출
+    fun onSignInLaunched() {
+        Logger.d("ProfileViewModel", "onSignInLaunched 호출됨, signInPendingIntent 초기화.")
+        _uiState.update { it.copy(signInPendingIntent = null) }
+    }
+
+    // 인텐트 실행 실패 또는 다른 이유로 signInPendingIntent를 초기화할 때 호출
+    fun clearSignInPendingIntent() {
+        Logger.d("ProfileViewModel", "clearSignInPendingIntent 호출됨.")
+        _uiState.update { it.copy(signInPendingIntent = null, isLoading = false) }
+    }
+
+
 
     private fun handleGetCredentialException(e: GetCredentialException, contextMessage: String) {
         Logger.d("login error", contextMessage)
     }
 
 
-
     suspend fun sendJsonToServer(tableName: String, jsonData: String) {
-
+        // 이미 suspend 함수이므로 viewModelScope.launch 불필요
         val storedProfileData: UserProfileData? =
             userPreferencesRepository.userProfileDataFlow.firstOrNull()
         val storedFirebaseUid = storedProfileData?.firebaseUid
@@ -458,6 +589,12 @@ class HomeViewModel (
 
             if (response.isSuccessful) {
                 Logger.d("ProfileViewModel", "JSON data sent to server successfully.")
+                _uiState.update {
+                    it.copy(
+                        userMessageType = "success", // 성공 타입 명시
+                        userMessage = "데이터가 서버에 성공적으로 전송되었습니다."
+                    )
+                }
             } else {
                 val errorBody = response.errorBody()?.string()
                 Logger.e(
@@ -467,7 +604,7 @@ class HomeViewModel (
                 _uiState.update {
                     it.copy(
                         userMessageType = "error",
-                        userMessage = "인증 실패: ${response.message()} (코드: ${response.code()})"
+                        userMessage = "서버 전송 실패: ${response.message()} (코드: ${response.code()})"
                     )
                 }
             }
@@ -476,13 +613,11 @@ class HomeViewModel (
             _uiState.update {
                 it.copy(
                     userMessageType = "error",
-                    userMessage = "인증중 오류 발생: ${e.localizedMessage}"
+                    userMessage = "서버 전송 중 오류 발생: ${e.localizedMessage}"
                 )
             }
         }
     }
-
-
 
     fun signOut() {
         _uiState.update { it.copy(isLoading = true) }
@@ -539,7 +674,7 @@ class HomeViewModel (
             userPreferencesRepository.saveAgree(newTermsAccepted)
         }
     }
-
+/*
     fun deleteUserAccount() {
         _uiState.update {
             it.copy(
@@ -615,7 +750,7 @@ class HomeViewModel (
                 userPreferencesRepository.clearUserProfileData() // UID 포함 모든 정보 삭제
                 Logger.d("ProfileViewModel", "로컬 사용자 프로필 데이터 삭제됨 (계정 삭제 후).")
                 // 필요하다면 다른 사용자 관련 데이터(예: 몸무게)도 여기서 초기화/삭제
-                userPreferencesRepository.clearUserWeight()
+
                 userPreferencesRepository.clearFirebaseUid()
 
 
@@ -637,13 +772,15 @@ class HomeViewModel (
                         )
                 }
             } catch (e: Exception) {
-                startGoogleSignIn()
+
+
+
                 Logger.w("ProfileViewModel", "Firebase 사용자 계정 삭제 실패")
                 if (e is FirebaseAuthRecentLoginRequiredException) {
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            userMessage = "계정을 삭제하려면 보안을 위해 다시 로그인해야 합니다.",
+                            userMessage = "삭제하시려면  구글로그인을 다시 로그하여 주세요. ",
                             requiresReAuthentication = true // UI에서 재로그인 유도
                         )
                     }
@@ -661,7 +798,126 @@ class HomeViewModel (
         }
 
     }
+*/
 
+    fun deleteUserAccount() {
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                userMessage = null,
+                requiresReAuthentication = false
+            )
+        }
+
+        viewModelScope.launch {
+            val currentUser = firebaseAuth.currentUser
+            val storedProfileData = userPreferencesRepository.userProfileDataFlow.firstOrNull()
+            val storedFirebaseUid = storedProfileData?.firebaseUid
+
+            if (storedFirebaseUid.isNullOrBlank()) {
+                Logger.w("ProfileViewModel", "계정 삭제 시도: 생성된 계정 없음 (Firebase 비로그인, 로컬 UID 없음).")
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        userMessage = "생성된 계정이 없습니다. 삭제할 계정이 없습니다.",
+                        isUserLoggedIn = false
+                    )
+                }
+                return@launch
+            }
+
+            if (currentUser == null) {
+                Logger.w("ProfileViewModel", "계정 삭제 시도: Firebase 로그인 없음 (로컬 UID 존재).")
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        userMessage = "계정을 삭제하려면 먼저 로그인해주세요.",
+                        isUserLoggedIn = false
+                    )
+                }
+                return@launch
+            }
+
+            // UID 불일치 방지
+            if (currentUser.uid != storedFirebaseUid) {
+                Logger.w("ProfileViewModel", "현재 로그인된 계정과 저장된 UID가 일치하지 않음. 삭제 중단.")
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        userMessage = "로그인된 계정과 저장된 정보가 일치하지 않습니다. 삭제가 중단되었습니다.",
+                    )
+                }
+                return@launch
+            }
+
+            val firebaseUidToDelete = currentUser.uid
+            Logger.d("ProfileViewModel", "Firebase 및 백엔드 계정 삭제 시작... UID: $firebaseUidToDelete")
+
+            // 1. 백엔드 API를 통해 회원 정보 삭제 시도
+            try {
+                myApiService.deleteMemberData(firebaseUidToDelete)
+                Logger.d("ProfileViewModel", "백엔드 회원 데이터 삭제 성공.")
+            } catch (e: Exception) {
+                Logger.w("ProfileViewModel", "백엔드 회원 데이터 삭제 실패: ${e.localizedMessage}")
+                // 백엔드 실패는 사용자에게 굳이 노출하지 않음 (선택)
+            }
+
+            // 2. Firebase 사용자 계정 삭제
+            try {
+                currentUser.delete().await()
+                Logger.d("ProfileViewModel", "Firebase 사용자 계정 삭제 성공.")
+
+                // 3. CredentialManager 상태 클리어
+                try {
+                    credentialManager.clearCredentialState(ClearCredentialStateRequest())
+                    Logger.d("ProfileViewModel", "CredentialManager 상태 클리어 성공.")
+                } catch (e: ClearCredentialException) {
+                    Logger.w("ProfileViewModel", "CredentialManager 상태 클리어 실패.")
+                }
+
+                // 4. 로컬 데이터 삭제
+                userPreferencesRepository.clearUserProfileData()
+                userPreferencesRepository.clearFirebaseUid()
+                Logger.d("ProfileViewModel", "로컬 사용자 데이터 삭제 완료.")
+
+                // 5. UI 상태 초기화
+                _uiState.update {
+                    HomeUiState(
+                        weight = it.weight, // 필요 시 유지
+                        isUserLoggedIn = false,
+                        userName = null,
+                        userEmail = null,
+                        userPhotoUrl = null,
+                        idToken = null,
+                        isLoading = false,
+                        signInPendingIntent = null,
+                        userMessage = "계정이 성공적으로 삭제되었습니다.",
+                        requiresReAuthentication = false
+                    )
+                }
+
+            } catch (e: Exception) {
+                Logger.w("ProfileViewModel", "Firebase 사용자 계정 삭제 실패: ${e.localizedMessage}")
+                if (e is FirebaseAuthRecentLoginRequiredException) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            userMessage = "계정을 삭제하려면 구글 로그인을 다시 해주세요.",
+                            requiresReAuthentication = true
+                        )
+                    }
+                    startGoogleSignIn()   //다시 로그인 시작시킴
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            userMessage = "계정 삭제에 실패했습니다: ${e.localizedMessage ?: "알 수 없는 오류"}"
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     fun needAgree() {
         _uiState.update { it.copy(userMessageType = "error", userMessage = "개인정보 취급 방침에 동의하여 주세요") }

@@ -39,15 +39,25 @@ interface MyApiService {
     suspend fun registerDevice(
         @Query("tableId") tableName: String,
         @Query("uid") firebaseUid: String,
+        @Query("token") token: String,
     ): Response<Unit>
 
 
     @POST("smartkofarm/dlrjtdlek_rgmd") // 엔드포인트 이름을 더 명확하게 변경
-    suspend fun uploadDatabaseDumpJson(
+    suspend fun registerUser(
         @Query("tableId") tableName: String,
-        @Query("uid") firebaseUid: String, // 사용자 식별을 위해 UID를 쿼리 파라미터로 추가하는 것을 고려
-        @Body databaseDumpJson: RequestBody // String 대신 RequestBody 사용 권장 (특히 대용량일 경우)
+        @Query("uid") firebaseUid: String,
+        @Query("token") token: String,
     ): Response<Unit>
+
+
+///// 파이어베이스 아이디를  서버로 전송함
+    @POST("smartkofarm/uploadExerciseLog") // 엔드포인트 이름을 더 명확하게 변경
+    suspend fun uploadDatabaseDumpJson(
+    @Query("tableId") tableName: String,
+    @Query("uid") firebaseUid: String, // 사용자 식별을 위해 UID를 쿼리 파라미터로 추가하는 것을 고려
+    @Body databaseDumpJson: RequestBody // String 대신 RequestBody 사용 권장 (특히 대용량일 경우)
+): Response<Unit>
 
 //
 //    // 반환 타입을 ApiResponseWrapper로 변경하여 실제 JSON 구조에 맞춤

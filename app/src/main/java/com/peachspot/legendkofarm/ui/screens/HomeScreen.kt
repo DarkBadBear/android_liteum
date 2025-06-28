@@ -18,6 +18,7 @@ import com.peachspot.legendkofarm.ui.components.MyAppTopBar
 import com.peachspot.legendkofarm.viewmodel.HomeViewModel
 import com.peachspot.legendkofarm.ui.components.CommonWebView
 import com.peachspot.legendkofarm.R
+import com.peachspot.legendkofarm.ui.navigation.AppScreenRoutes
 
 object HomeScreenContentTypes {
     const val INFO = "info"
@@ -25,9 +26,6 @@ object HomeScreenContentTypes {
     const val ERROR = "error"
 }
 
-object AppScreenRoutes {
-    const val NOTIFICATION_SCREEN = "notification_screen_route"
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("SetJavaScriptEnabled")
@@ -50,21 +48,6 @@ fun HomeScreen(
     var showAlert by remember { mutableStateOf(false) }
     var alertMessage by remember { mutableStateOf<String?>(null) }
     var jsAlertResult by remember { mutableStateOf<JsResult?>(null) }
-//
-//    val coroutineScope = rememberCoroutineScope()
-//    var isRefreshing by remember { mutableStateOf(false) }
-//
-//    val webView = remember {
-//        WebView(context).apply {
-//            settings.javaScriptEnabled = true
-//            settings.domStorageEnabled = true
-//            settings.javaScriptCanOpenWindowsAutomatically = true
-//            settings.setSupportMultipleWindows(true)
-//            settings.loadWithOverviewMode = true
-//            settings.useWideViewPort = true
-//            loadUrl("https://urdesk.co.kr/legendkofarm/diary")
-//        }
-//    }
 
     LaunchedEffect(uiState.userMessage) {
         uiState.userMessage?.let { message ->
@@ -76,30 +59,12 @@ fun HomeScreen(
         }
     }
 
-//
-//
-//    if (showAlert) {
-//        AlertDialog(
-//            onDismissRequest = {
-//                jsAlertResult?.cancel()
-//                showAlert = false
-//            },
-//            title = { Text("알림") },
-//            text = { Text(alertMessage ?: "") },
-//            confirmButton = {
-//                TextButton(onClick = {
-//                    jsAlertResult?.confirm()
-//                    showAlert = false
-//                }) {
-//                    Text("확인")
-//                }
-//            }
-//        )
-//    }
-
     Scaffold(
+        contentWindowInsets = WindowInsets(0), // ← 상하 모두 insets 제거
+        containerColor = Color.White, // Scaffold 배경
         snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState) { snackbarData ->
+            SnackbarHost(hostState = snackbarHostState) {
+                snackbarData ->
                 val containerColor = when (uiState.userMessageType) {
                     HomeScreenContentTypes.INFO, HomeScreenContentTypes.SUCCESS -> Color(0xFF4CAF50)
                     HomeScreenContentTypes.ERROR -> Color(0xFFFF0000)
@@ -126,9 +91,6 @@ fun HomeScreen(
                     viewModel.refreshWebView("home")
                 },
                 onTitleClick = {
-//                    navController.navigate("home_tab_host") {
-//                        //popUpTo("home") { inclusive = true }
-//                    }
 
                 }
             )

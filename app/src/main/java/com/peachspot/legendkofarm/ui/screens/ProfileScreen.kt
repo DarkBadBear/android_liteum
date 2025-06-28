@@ -1,7 +1,11 @@
 package com.peachspot.legendkofarm.ui.screens
 
 
+import android.Manifest
 import android.app.Activity
+import android.content.pm.PackageManager
+import android.os.Build
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -10,6 +14,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -23,6 +28,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItemDefaults.contentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -55,6 +61,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.peachspot.legendkofarm.R
@@ -72,6 +79,7 @@ fun ProfileScreen(
     navController: NavController, // NavController를 파라미터로 받도록 수정
     modifier: Modifier = Modifier,
 ) {
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showTermsDialog by rememberSaveable { mutableStateOf(false) } // 약관 다이얼로그 표시 상태
@@ -81,8 +89,8 @@ fun ProfileScreen(
     val focusManager = LocalFocusManager.current // LocalFocusManager 인스턴스 가져오기
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-
-
+    val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     val signInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartIntentSenderForResult()
     ) { result ->
@@ -93,6 +101,25 @@ fun ProfileScreen(
         }
     }
 
+    // Android 13 이상에서 알림 권한 체크 및 요청
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+    }
+
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permissionCheck = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            )
+            if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                Logger.d("ProfileScreen", "이미 알림 권한 있음")
+            }
+        }
+    }
     LaunchedEffect(uiState.signInPendingIntent) {
         uiState.signInPendingIntent?.let { intentSender ->
             try {
@@ -116,8 +143,7 @@ fun ProfileScreen(
         }
     }
     // --- 여기부터 수정 ---
-    val context = LocalContext.current
-    val uriHandler = LocalUriHandler.current
+
     fun website() {
         val url =
             "https://www.peachspot.co.kr/legendkofarm" // 여기에 실제 웹사이트 주소 입력
@@ -129,8 +155,6 @@ fun ProfileScreen(
             Logger.e("ProfileScreen", "Failed to open URL: $url", e)
         }
     }
-
-
     fun privacy() {
         val url =
             "https://www.peachspot.co.kr/legendkofarm/privacy" // 여기에 실제 웹사이트 주소 입력
@@ -153,7 +177,6 @@ fun ProfileScreen(
                     Text("전설의 농부", style = MaterialTheme.typography.titleLarge)
                     Text("농업 생산활동을 향상 시키는  앱입니다.")
                     Spacer(modifier = Modifier.height(8.dp))
-
 
                     NavigationDrawerItem(
                         icon = {
@@ -190,6 +213,9 @@ fun ProfileScreen(
         }
     ) {
         Scaffold(
+            contentWindowInsets = WindowInsets(0), // ← 상하 모두 insets 제거
+            containerColor = Color.White, // Scaffold 배경
+
             snackbarHost = {
                 SnackbarHost(
                     hostState = snackbarHostState,
@@ -209,7 +235,7 @@ fun ProfileScreen(
                             Snackbar(
                                 snackbarData = snackbarData,
                                 containerColor = containerColor,
-                                contentColor = Color(0xFFFFFFFF)//contentColor,
+                                contentColor = contentColor
                             )
                         }
                     }
@@ -226,6 +252,9 @@ fun ProfileScreen(
                                 drawerState.close()
                             }
                         }
+                    },
+                onTitleClick = {
+
                     })
             }
         ) { innerPadding ->
@@ -249,7 +278,7 @@ fun ProfileScreen(
                         )
                     )
                 }else{
-                    Text(text="로그인이 되었습니다.\n작업일지를 사용할 수 있습니다.",   fontSize = 16.sp);
+                    Text(text="로그인이 되었습니다.\n작업일지를 사용할 수 있습니다.",   fontSize = 16.sp,color=Color.Black);
                 }
 
                 Spacer(Modifier.height(14.dp)) // 상단 여백
@@ -262,9 +291,12 @@ fun ProfileScreen(
                     // 로그인 버튼은 약관 동의 시에만 활성화 (선택적 구현)
                     else -> LoginPrompt(
                         onSignInClicked = {
-
                             if (uiState.termsAccepted == true) {
-                                viewModel.startGoogleSignIn()
+
+
+                                    viewModel.startGoogleSignIn()
+
+
                             } else {
 
                                 viewModel.needAgree()
@@ -293,6 +325,7 @@ fun ProfileScreen(
                         Text(
                             text = stringResource(R.string.profile_agree_to_privacy_policy),
                             style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                            color=Color.Black,
                             modifier = Modifier
                                 .padding(4.dp) // Optional: Add some padding inside the border so text isn't too close
                         )
@@ -338,13 +371,13 @@ fun ProfileScreen(
 
                             Spacer(Modifier.height(100.dp)) // 상단 여백
 
-                            Text(text="작업일지,자금관리를 삭제하시려면 \n[계정 삭제] 버튼을 눌러주세요.",  );
+                            Text(text="작업일지,자금관리를 삭제하시려면 \n[계정 삭제] 버튼을 눌러주세요.", color=Color.Black);
                             Spacer(Modifier.height(10.dp)) // 상단 여백
                             Button(
                                 onClick = { showExitDialog = true },
                                 enabled = uiState.isUserLoggedIn
                             ) {
-                                Text("[계정 삭제]")
+                                Text("계정 삭제")
                             }
 
                         }
@@ -412,4 +445,3 @@ fun TermsDialog(onDismiss: () -> Unit) {
         }
     )
 }
-

@@ -89,6 +89,8 @@ fun DiaryScreen(
 
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0), // ← 상하 모두 insets 제거
+        containerColor = Color.White, // Scaffold 배경
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { snackbarData ->
                 val containerColor = when (uiState.userMessageType) {
@@ -112,6 +114,7 @@ fun DiaryScreen(
                 title = stringResource(R.string.screen_title_building),
                 onNotificationClick = {
                     navController.navigate(AppScreenRoutes.NOTIFICATION_SCREEN)
+
                 },
                 onRefreshClicked ={
                     viewModel.refreshWebView("diary")
@@ -172,7 +175,11 @@ fun DiaryScreen(
 
                     Spacer(Modifier.height(24.dp)) // 상단 여백
 
-                    Text(text = "구글 연동 이후 사용가능 합니다.") // MainScreen 내부에서 탭 간 이동
+                    Text(
+                        text = "구글 연동 이후 사용가능 합니다.",
+                        color = Color.Black
+                    )
+
 
                     Button(
                         onClick = {
