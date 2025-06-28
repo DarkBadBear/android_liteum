@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
+import android.util.Log
 import android.webkit.WebView
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
@@ -19,6 +20,7 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingExcept
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.messaging.FirebaseMessaging
 import com.google.gson.Gson
 import com.peachspot.legendkofarm.data.remote.api.MyApiService
 import com.peachspot.legendkofarm.data.repositiory.HomeRepository
@@ -33,9 +35,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import com.peachspot.legendkofarm.R
+import com.peachspot.legendkofarm.data.remote.client.NetworkClient
 import kotlinx.coroutines.flow.first
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 
 data class HomeUiState(
     val errorMessage: String? = null,
@@ -239,14 +243,9 @@ class HomeViewModel (
                     )
                 }
             }
-
-            val gson = Gson()
-            val dump =  "";
-                sendJsonToServer("regUid", gson.toJson(dump)) // 이 함수는 내부적으로 UI 상태를 업데이트합니다.
-
         }
-
     }
+
 
     // ProfileScreen에서 IntentSender (PendingIntent) 실행 후 결과를 받아 호출되는 함수
     fun handleSignInActivityResult(data: Intent?) {
@@ -390,6 +389,16 @@ class HomeViewModel (
                     )
                     userPreferencesRepository.saveUserProfileData(userProfileToSave) // 생성한 객체를 전달
 
+                    val fcmToken = FirebaseMessaging.getInstance().token.await()
+
+
+                    if (!fcmToken.isNullOrBlank()) {
+                        NetworkClient.myApiService.registerUser("AppToken", firebaseUid, fcmToken)
+                    }else{
+                        Logger.e("ProfileViewModel", "FCM 토큰이 null 또는 빈 문자열입니다.")
+                    }
+
+
                     _uiState.update {
                         it.copy(
                             isUserLoggedIn = true,
@@ -429,9 +438,8 @@ class HomeViewModel (
     }
 
 
-
     suspend fun sendJsonToServer(tableName: String, jsonData: String) {
-
+        // 이미 suspend 함수이므로 viewModelScope.launch 불필요
         val storedProfileData: UserProfileData? =
             userPreferencesRepository.userProfileDataFlow.firstOrNull()
         val storedFirebaseUid = storedProfileData?.firebaseUid
@@ -458,6 +466,12 @@ class HomeViewModel (
 
             if (response.isSuccessful) {
                 Logger.d("ProfileViewModel", "JSON data sent to server successfully.")
+                _uiState.update {
+                    it.copy(
+                        userMessageType = "success", // 성공 타입 명시
+                        userMessage = "데이터가 서버에 성공적으로 전송되었습니다."
+                    )
+                }
             } else {
                 val errorBody = response.errorBody()?.string()
                 Logger.e(
@@ -467,7 +481,7 @@ class HomeViewModel (
                 _uiState.update {
                     it.copy(
                         userMessageType = "error",
-                        userMessage = "인증 실패: ${response.message()} (코드: ${response.code()})"
+                        userMessage = "서버 전송 실패: ${response.message()} (코드: ${response.code()})"
                     )
                 }
             }
@@ -476,13 +490,11 @@ class HomeViewModel (
             _uiState.update {
                 it.copy(
                     userMessageType = "error",
-                    userMessage = "인증중 오류 발생: ${e.localizedMessage}"
+                    userMessage = "서버 전송 중 오류 발생: ${e.localizedMessage}"
                 )
             }
         }
     }
-
-
 
     fun signOut() {
         _uiState.update { it.copy(isLoading = true) }

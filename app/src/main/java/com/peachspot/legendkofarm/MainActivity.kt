@@ -57,6 +57,7 @@ import com.peachspot.legendkofarm.data.remote.client.NetworkClient.myApiService
 import com.peachspot.legendkofarm.data.repositiory.HomeRepositoryImpl
 import com.peachspot.legendkofarm.data.repositiory.UserPreferencesRepository
 import com.peachspot.legendkofarm.services.MyFirebaseMessagingService
+import com.peachspot.legendkofarm.ui.navigation.AppScreenRoutes
 import com.peachspot.legendkofarm.ui.screens.MainScreen
 import com.peachspot.legendkofarm.ui.screens.NotificationScreen
 import com.peachspot.legendkofarm.ui.theme.legendkofarmiTheme
@@ -125,10 +126,10 @@ class MainActivity : ComponentActivity() {
 
         handleIntent(intent)
         FirebaseApp.initializeApp(this)
-//        Firebase.appCheck.installAppCheckProviderFactory(
-//            PlayIntegrityAppCheckProviderFactory.getInstance()
-//        )
-            //setupRemoteConfig()
+        Firebase.appCheck.installAppCheckProviderFactory(
+            PlayIntegrityAppCheckProviderFactory.getInstance()
+        )
+           setupRemoteConfig()
 
 
 
@@ -164,8 +165,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             legendkofarmiTheme {
 
-                // ViewModel 인스턴스 생성 (Hilt 미사용)
-                // 예시: MainScreen.kt에서 ViewModel을 생성하는 방식을 따르거나, Application 인스턴스를 전달
                 val application = LocalContext.current.applicationContext as Application
                 val navController = rememberNavController()
                 val context = LocalContext.current.applicationContext as Application
@@ -184,9 +183,6 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 val homeViewModel: HomeViewModel = viewModel(factory = viewModelFactory)
-
-
-
 
                 MainScreen(
                     navController = navController,
@@ -282,11 +278,12 @@ class MainActivity : ComponentActivity() {
 
             LaunchedEffect(Unit) {
                 checkAppVersion()
-                registerAppToken()
+                ////registerAppToken()
             }
 
 
         }
+
         ///requestLocationPermissionIfNeeded()
         requestNotificationPermissionIfNeeded() // 알림 권한 요청 함수 호출  알림 권한 받고나서야 위치권한 받게 하려면?
     }
@@ -386,53 +383,53 @@ class MainActivity : ComponentActivity() {
     }
 
 
-//    private fun setupRemoteConfig() {
-//        val remoteConfig = Firebase.remoteConfig
-//        val configSettings = remoteConfigSettings {
-//            minimumFetchIntervalInSeconds =
-//                if (com.peachspot.legendkofarm.BuildConfig.DEBUG) {
-//                    0
-//                } else {
-//                    3600
+    private fun setupRemoteConfig() {
+        val remoteConfig = Firebase.remoteConfig
+        val configSettings = remoteConfigSettings {
+            minimumFetchIntervalInSeconds =
+                if (com.peachspot.legendkofarm.BuildConfig.DEBUG) {
+                    0
+                } else {
+                    3600
+                }
+        }
+        remoteConfig.setConfigSettingsAsync(configSettings)
+        remoteConfig.setDefaultsAsync(R.xml.remote_config_defaults)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    Log.d(TAG, "Remote Config defaults loaded.")
+                } else {
+                    Log.e(TAG, "Failed to load Remote Config defaults.", task.exception)
+                }
+            }
+    }
+
+//    private fun registerAppToken() {
+//
+//        FirebaseMessaging.getInstance().getToken()
+//            .addOnCompleteListener(object : OnCompleteListener<String?> {
+//                public override fun onComplete(task: Task<String?>) {
+//                    // Get new FCM registration token
+//                    val token: String? = task.getResult()
+//                    this@MainActivity.send_token(token)
 //                }
-//        }
-//        remoteConfig.setConfigSettingsAsync(configSettings)
-//        remoteConfig.setDefaultsAsync(R.xml.remote_config_defaults)
-//            .addOnCompleteListener { task ->
-//                if (task.isSuccessful) {
-//                    Log.d(TAG, "Remote Config defaults loaded.")
-//                } else {
-//                    Log.e(TAG, "Failed to load Remote Config defaults.", task.exception)
-//                }
-//            }
+//            })
 //    }
 
-    private fun registerAppToken() {
-
-        FirebaseMessaging.getInstance().getToken()
-            .addOnCompleteListener(object : OnCompleteListener<String?> {
-                public override fun onComplete(task: Task<String?>) {
-                    // Get new FCM registration token
-                    val token: String? = task.getResult()
-                    this@MainActivity.send_token(token)
-                }
-            })
-    }
-
-    fun send_token(token: String?) {
-        if (token?.isEmpty() == true) {
-            return
-        }
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val AppToken = mapOf("token" to token)
-                val response = myApiService.registerDevice("AppToken", token.toString())
-            } catch (e: Exception) {
-                Log.e("Main", "Exception while sending token to server.", e)
-            }
-        }
-    }
+//    fun send_token(token: String?) {
+//        if (token?.isEmpty() == true) {
+//            return
+//        }
+//
+//        CoroutineScope(Dispatchers.IO).launch {
+//            try {
+//                val AppToken = mapOf("token" to token)
+//                val response = myApiService.registerDevice("AppToken", token.toString())
+//            } catch (e: Exception) {
+//                Log.e("Main", "Exception while sending token to server.", e)
+//            }
+//        }
+//    }
 
 //
     private fun checkAppVersion() {
@@ -475,6 +472,8 @@ class MainActivity : ComponentActivity() {
                 }
             }
     }
+
+//
 @Composable
 fun AppNavHost(
     onFileChooserRequest: (ValueCallback<Array<Uri>>, Intent) -> Unit
@@ -507,15 +506,12 @@ fun AppNavHost(
         }
 
         // 탭 외부 화면
-        composable("notification_screen_route") {
+        composable(AppScreenRoutes.NOTIFICATION_SCREEN) {
             NotificationScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-//
-//        composable("some_profile_detail") {
-//            ProfileDetailScreen()
-//        }
+
     }
 }
 

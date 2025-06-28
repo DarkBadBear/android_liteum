@@ -141,6 +141,12 @@ fun MainScreen(
                     viewModel = homeViewModel
                 )
             }
+            composable(AppScreenRoutes.NOTIFICATION_SCREEN) {
+                NotificationScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
         }
     }
 }

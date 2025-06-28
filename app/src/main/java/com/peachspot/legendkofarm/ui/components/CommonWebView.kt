@@ -92,14 +92,16 @@ private fun handleCustomUrl(context: Context, view: WebView?, url: String): Bool
         } else {
 
             if (shouldOpenInExternalBrowser(view?.url, url)) {
-                Log.d("nicap AAAAAAAAAAAA","123" );
                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                 true
             } else {
                 view?.loadUrl(url) // 이 한 줄이 있어야 내부 WebView가 처리함!
-                return true
+                true
             }
+
+
         }
+
     } catch (_: Exception) {
         true
     }
@@ -238,10 +240,38 @@ fun CommonWebView(
                         )
                     }
 
-                    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                        val url = request?.url.toString()
-                        return handleCustomUrl(context, view, url)
+//                    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+//                        val url = request?.url.toString()
+//                        return handleCustomUrl(context, view, url)
+//                    }
+
+                    override fun shouldOverrideUrlLoading(wv: WebView, req: WebResourceRequest): Boolean {
+                        val url = req.url.toString()
+                        val baseUrl = wv.url ?: CommonWebViewState.lastKnownUrl ?: ""
+
+                        return when {
+
+                            isSameDomain(baseUrl, url) -> {
+                                wv.loadUrl(url)
+                                true
+                            }
+
+                            // 1. 외부 URL → handleCustomUrl로 처리
+                            handleCustomUrl(context, wv, url) -> {
+                                wv.post {
+                                }
+                                true
+                            }
+
+                            // 2. 같은 도메인 → 기존 WebView에서 열기
+
+
+                            // 3. 다른 도메인 → 새창 유지 (childWebView 그대로)
+                            else -> false
+                        }
+
                     }
+
                 }
 
                 webView.webChromeClient = object : WebChromeClient() {
@@ -291,7 +321,14 @@ fun CommonWebView(
                                     val baseUrl = mainWebView.url ?: CommonWebViewState.lastKnownUrl ?: ""
 
                                     return when {
-                                        // 1. 외부 URL → handleCustomUrl로 처리
+                                        // 1. 같은 도메인 → 기존 WebView에서 열기
+                                        isSameDomain(baseUrl, url) -> {
+                                            mainWebView.loadUrl(url)
+                                            wv.destroy()
+                                            true
+                                        }
+
+                                        // 2. 외부 URL → handleCustomUrl로 처리
                                         handleCustomUrl(context, mainWebView, url) -> {
                                             wv.post {
                                                 wv.destroy()
@@ -299,12 +336,6 @@ fun CommonWebView(
                                             true
                                         }
 
-                                        // 2. 같은 도메인 → 기존 WebView에서 열기
-                                        isSameDomain(baseUrl, url) -> {
-                                            mainWebView.loadUrl(url)
-                                            wv.destroy()
-                                            true
-                                        }
 
                                         // 3. 다른 도메인 → 새창 유지 (childWebView 그대로)
                                         else -> false

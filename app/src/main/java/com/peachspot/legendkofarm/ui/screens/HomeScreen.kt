@@ -18,6 +18,7 @@ import com.peachspot.legendkofarm.ui.components.MyAppTopBar
 import com.peachspot.legendkofarm.viewmodel.HomeViewModel
 import com.peachspot.legendkofarm.ui.components.CommonWebView
 import com.peachspot.legendkofarm.R
+import com.peachspot.legendkofarm.ui.navigation.AppScreenRoutes
 
 object HomeScreenContentTypes {
     const val INFO = "info"
@@ -25,9 +26,6 @@ object HomeScreenContentTypes {
     const val ERROR = "error"
 }
 
-object AppScreenRoutes {
-    const val NOTIFICATION_SCREEN = "notification_screen_route"
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("SetJavaScriptEnabled")

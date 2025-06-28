@@ -112,6 +112,7 @@ fun DiaryScreen(
                 title = stringResource(R.string.screen_title_building),
                 onNotificationClick = {
                     navController.navigate(AppScreenRoutes.NOTIFICATION_SCREEN)
+
                 },
                 onRefreshClicked ={
                     viewModel.refreshWebView("diary")

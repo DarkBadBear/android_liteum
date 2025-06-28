@@ -1,7 +1,11 @@
 package com.peachspot.legendkofarm.ui.screens
 
 
+import android.Manifest
 import android.app.Activity
+import android.content.pm.PackageManager
+import android.os.Build
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -55,6 +59,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.peachspot.legendkofarm.R
@@ -81,7 +86,8 @@ fun ProfileScreen(
     val focusManager = LocalFocusManager.current // LocalFocusManager 인스턴스 가져오기
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-
+    val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
 
     val signInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartIntentSenderForResult()
@@ -92,6 +98,37 @@ fun ProfileScreen(
             viewModel.clearSignInPendingIntent()//Logger.w("ProfileScreen", "로그인 실패 또는 취소: ${result.resultCode}")
         }
     }
+
+
+
+    // Android 13 이상에서 알림 권한 체크 및 요청
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            Logger.d("ProfileScreen", "알림 권한 허용됨")
+        } else {
+            Logger.w("ProfileScreen", "알림 권한 거부됨")
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permissionCheck = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            )
+            if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                Logger.d("ProfileScreen", "이미 알림 권한 있음")
+            }
+        }
+    }
+
+
+
+
 
     LaunchedEffect(uiState.signInPendingIntent) {
         uiState.signInPendingIntent?.let { intentSender ->
@@ -116,8 +153,7 @@ fun ProfileScreen(
         }
     }
     // --- 여기부터 수정 ---
-    val context = LocalContext.current
-    val uriHandler = LocalUriHandler.current
+
     fun website() {
         val url =
             "https://www.peachspot.co.kr/legendkofarm" // 여기에 실제 웹사이트 주소 입력
@@ -412,4 +448,3 @@ fun TermsDialog(onDismiss: () -> Unit) {
         }
     )
 }
-

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<defaultsMap>
+    <entry>
+        <key>latest_version_code</key>
+        <value>1</value> <!-- 기본값 -->
+    </entry>
+    <entry>
+        <key>is_force_update</key>
+        <value>false</value>
+    </entry>
+    <entry>
+        <key>update_message</key>
+        <value>새로운 버전으로 업데이트 해주세요!</value>
+    </entry>
+    <entry>
+        <key>store_url</key>
+        <value>market://details?id=com.peachspot.legendkofarm</value> <!-- 실제 패키지명으로 변경 -->
+    </entry>
+</defaultsMap>
