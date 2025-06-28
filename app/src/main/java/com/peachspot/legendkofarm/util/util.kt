@@ -84,7 +84,6 @@ object Logger {
         }
     }
 
-
     fun d(message: String) { // 기본 태그 사용
         if (enabled) {
             Log.d(GLOBAL_TAG, message)
