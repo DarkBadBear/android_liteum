@@ -4,18 +4,24 @@ package com.peachspot.legendkofarm.ui.components
 
 //import androidx.compose.ui.graphics.Color // 직접 색상 지정 대신 MaterialTheme 사용 권장
 import android.view.SoundEffectConstants
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -67,12 +73,41 @@ fun MyAppTopBar(
              }
          },
         actions = {
-            TextButton(onClick = onRefreshClicked) {
-                Icon(Icons.Default.Refresh, contentDescription = "화면 새로고침" ,tint = Color.White ,modifier = Modifier.padding(top = 8.dp))
+            Box(modifier = Modifier.padding(top = 3.dp)) {
+
+                TextButton(
+                onClick = onRefreshClicked,
+                    modifier = Modifier.height(36.dp)
+                    .border(
+                        width = 1.dp,
+                        color = Color(0xFF999999),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .padding(0.dp), // 테두리 안쪽 여유공간
+                shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                colors = ButtonDefaults.textButtonColors(
+                    containerColor = Color.Transparent // 배경 없으면 필요
+                )
+            ) {
+                Icon(
+                    Icons.Default.Refresh,
+                    contentDescription = "화면 새로고침",
+                    tint = Color.White,
+                    modifier = Modifier.padding(top = 2.dp).size(16.dp)
+                )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("화면 새로고침",color=Color.White,
-                    modifier = Modifier.padding(top = 8.dp)) // 상단 패딩만 12dp 주기)
+                Text(
+                    "화면 새로고침", color = Color.White,
+                    modifier = Modifier.padding(bottom =0.dp)
+                ) // 상단 패딩만 12dp 주기)
+
             }
+
+
+        }
+
+
 
             IconButton(onClick = {
                 view.playSoundEffect(SoundEffectConstants.CLICK)

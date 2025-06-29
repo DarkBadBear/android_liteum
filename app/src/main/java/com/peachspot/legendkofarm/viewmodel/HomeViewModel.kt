@@ -135,7 +135,7 @@ class HomeViewModel (
     init {
         Logger.d("ProfileViewModel", "ViewModel 초기화 시작.")
         viewModelScope.launch {
-            delay(300);
+            delay(500);
             checkCurrentUser()
         }
             Logger.d("ProfileViewModel", "ViewModel 초기화 완료.")
@@ -220,7 +220,7 @@ class HomeViewModel (
                 // ✅ UID 불일치 시 로컬 데이터 초기화
                 if (storedUid != null && storedUid != currentUid) {
                     Logger.w("ProfileViewModel", "Firebase UID와 로컬 UID 불일치 → 로컬 초기화")
-                    userPreferencesRepository.clearUserProfileData()
+                 //   userPreferencesRepository.clearUserProfileData()
                 }
 
                 try {
