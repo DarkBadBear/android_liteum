@@ -48,9 +48,7 @@ android {
 
     buildTypes {
         debug {
-//            ndk {
-//                debugSymbolLevel = "FULL"
-//            }
+
             signingConfig = signingConfigs.getByName("shared")
             isMinifyEnabled = false
             isShrinkResources = false
@@ -62,9 +60,7 @@ android {
         }
 
         release {
-//            ndk {
-//                debugSymbolLevel = "SYMBOL_TABLE"
-//            }
+
             isMinifyEnabled = true
             isShrinkResources = true
             signingConfig = signingConfigs.getByName("shared")
