@@ -124,6 +124,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
 
+
+
         handleIntent(intent)
         FirebaseApp.initializeApp(this)
         Firebase.appCheck.installAppCheckProviderFactory(
@@ -192,6 +194,16 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 )
+
+                LaunchedEffect(Unit) {
+                    if (!isNetworkAvailable()) {
+                        showServiceStoppedDialogState=true
+                    } else {
+                        checkAppVersion()
+                        registerAppToken()
+                    }
+                }
+
 
 
                 // 서비스 중지 다이얼로그
@@ -269,10 +281,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            LaunchedEffect(Unit) {
-                checkAppVersion()
-                registerAppToken()
-            }
 
 
         }
