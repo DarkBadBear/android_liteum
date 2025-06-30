@@ -529,7 +529,7 @@ class HomeViewModel (
                 }
             } catch (e: Exception) {
                 val errorMsg =
-                    "Firebase 인증 실패: ${e.localizedMessage ?: "알 수 없는 오류"}"
+                    "Firebase 인증 실패101: ${e.localizedMessage ?: "알 수 없는 오류"}"
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -675,131 +675,6 @@ class HomeViewModel (
             userPreferencesRepository.saveAgree(newTermsAccepted)
         }
     }
-/*
-    fun deleteUserAccount() {
-        _uiState.update {
-            it.copy(
-                isLoading = true,
-                userMessage = null,
-                requiresReAuthentication = false
-            )
-        }
-
-        viewModelScope.launch {
-            val currentUser = firebaseAuth.currentUser
-            val storedProfileData: UserProfileData? =
-                userPreferencesRepository.userProfileDataFlow.firstOrNull()
-            val storedFirebaseUid = storedProfileData?.firebaseUid
-            if (storedFirebaseUid == null) {
-                Logger.w("ProfileViewModel", "계정 삭제 시도: 생성된 계정 없음 (Firebase 비로그인, 로컬 UID 없음).")
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        userMessage = "생성된 계정이 없습니다. 삭제할 계정이 없습니다.",
-                        isUserLoggedIn = false
-                    )
-                }
-                return@launch
-            }
-
-            if (currentUser == null) {
-                if (storedFirebaseUid != null && storedFirebaseUid.isNotBlank()) {
-                    Logger.w(
-                        "ProfileViewModel",
-                        "계정 삭제 시도: 사용자가 Firebase에 로그인되어 있지 않음 (로컬에 UID 기록은 존재)."
-                    )
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            userMessage = "계정을 삭제하려면 먼저 로그인해주세요.",
-                            isUserLoggedIn = false // 명시적으로 로그아웃 상태임을 알림
-                        )
-                    }
-                }
-                return@launch
-            }
-
-            val firebaseUidToDelete = currentUser.uid
-            Logger.d(
-                "ProfileViewModel",
-                "Firebase 계정 및 백엔드 데이터 삭제 시도 중... 사용자 UID: $firebaseUidToDelete"
-            )
-            // --- 1. 백엔드 API 호출 ---
-            Logger.d("ProfileViewModel", "백엔드 회원 데이터 삭제 API 호출 시작... UID: $firebaseUidToDelete")
-            try {
-                val apiResponse =
-                    myApiService.deleteMemberData(firebaseUidToDelete) // myApiService 사용
-                Logger.d("ProfileViewModel", "CredentialManager 상태 클리어 성공 (계정 삭제 후).")
-            } catch (e: ClearCredentialException) {
-                Logger.w("ProfileViewModel", "CredentialManager 상태 클리어 실패 (계정 삭제 후).")
-            }
-            // currentUser가 null이 아니므로, Firebase에 로그인된 사용자가 존재.
-            Logger.d("ProfileViewModel", "Firebase 계정 삭제 시도 중... 사용자 UID: ${currentUser.uid}")
-            try {
-                currentUser.delete().await()
-                Logger.d("ProfileViewModel", "Firebase 사용자 계정 삭제 성공.")
-
-                // Credential Manager 상태 클리어
-                try {
-                    credentialManager.clearCredentialState(ClearCredentialStateRequest())
-                    Logger.d("ProfileViewModel", "CredentialManager 상태 클리어 성공 (계정 삭제 후).")
-                } catch (e: ClearCredentialException) {
-                    Logger.w("ProfileViewModel", "CredentialManager 상태 클리어 실패 (계정 삭제 후).")
-                }
-
-                // 로컬 DataStore에서 모든 사용자 프로필 정보 삭제
-                userPreferencesRepository.clearUserProfileData() // UID 포함 모든 정보 삭제
-                Logger.d("ProfileViewModel", "로컬 사용자 프로필 데이터 삭제됨 (계정 삭제 후).")
-                // 필요하다면 다른 사용자 관련 데이터(예: 몸무게)도 여기서 초기화/삭제
-
-                userPreferencesRepository.clearFirebaseUid()
-
-
-                _uiState.update { // 상태를 초기화
-                    HomeUiState(
-                        // 기존 ProfileUiState의 기본값을 사용하거나, 필요한 값만 유지
-                        weight = it.weight, // 몸무게는 유지하거나 필요에 따라 초기화
-                        isUserLoggedIn = false,
-                        userName = null,
-                        userEmail = null,
-                        userPhotoUrl = null,
-                        idToken = null,
-                        isLoading = false,
-                        signInPendingIntent = null,
-                        userMessage = "계정이 성공적으로 삭제되었습니다.",
-                        requiresReAuthentication = false,
-
-
-                        )
-                }
-            } catch (e: Exception) {
-
-
-
-                Logger.w("ProfileViewModel", "Firebase 사용자 계정 삭제 실패")
-                if (e is FirebaseAuthRecentLoginRequiredException) {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            userMessage = "삭제하시려면  구글로그인을 다시 로그하여 주세요. ",
-                            requiresReAuthentication = true // UI에서 재로그인 유도
-                        )
-                    }
-                } else {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            userMessage = "계정 삭제에 실패했습니다: ${e.localizedMessage ?: "알 수 없는 오류"}"
-                        )
-                    }
-                }
-
-
-            }
-        }
-
-    }
-*/
 
     fun deleteUserAccount() {
         _uiState.update {

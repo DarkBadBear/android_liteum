@@ -122,7 +122,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // 다크모드 비활성화
 
 
         handleIntent(intent)

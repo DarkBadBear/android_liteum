@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "562206454519-a9g8b1juuc618llkg61mqjg9ec23q4hv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.peachspot.legendkofarm",
+            "certificate_hash": "0c4f0f043156075e2e1936b8afd1ca546819116a"
+          }
+        },
+        {
           "client_id": "562206454519-s7ujuii958skj0vq15jr56pl2d663k36.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -28,7 +36,7 @@
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCyX5lhnjR4WDpRUlYM_rjeBX9-7y96Anw"
+          "current_key": "AIzaSyBJRMw7yERC1HMOgHnzqUVTaUeZjb8PFMI"
         }
       ],
       "services": {
