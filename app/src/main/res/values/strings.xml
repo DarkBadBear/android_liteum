@@ -18,8 +18,8 @@
     <string name="no_notifications_available">받은 알림이 없습니다.</string>
     <string name="notification_item_image_content_desc">ㅇ_ㅇ</string>
     <string name="mountain_icon_content_description">아이템</string>
-    <string name="tab_diary">작업일지</string>
-    <string name="tab_exchange">거래 시세</string>
+    <string name="tab_diary">일기</string>
+    <string name="tab_exchange">시세</string>
     <string name="tab_news">정보</string>
     <string name="default_web_client_id">562206454519-600acavebt0hhjkudijr3l4pd3pqcpgm.apps.googleusercontent.com</string>
     <string name="screen_title">마이페이지</string>
