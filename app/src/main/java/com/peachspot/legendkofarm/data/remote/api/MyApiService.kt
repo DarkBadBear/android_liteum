@@ -17,8 +17,11 @@ data class ApiResponseWrapper<T>(
 interface MyApiService {
 
 
-    @POST("legendkofarm/delete_member")
-    suspend fun deleteMemberData(@Query("uid") firebaseUid: String): Response<Unit>
+    @POST("smartkofarm/delete_member")
+    suspend fun deleteMemberData(
+        @Query("uid") firebaseUid: String,
+        @Query("token") token: String
+        ): Response<Unit>
 
 //    @POST("legendkofarm/update_building_data") // 실제 API 엔드포인트로 변경하세요
 //    suspend fun updateBuildingData(@Body logData: ExerciseLogUpdateRequest): Response<Unit>

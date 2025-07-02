@@ -42,6 +42,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import android.app.Activity
+import android.webkit.WebSettings
 
 data class HomeUiState(
     val errorMessage: String? = null,
@@ -101,6 +102,26 @@ class HomeViewModel (
     }
 
     fun getOrCreateWebView(context: Context, tag: String, url: String): WebView {
+        val webView = webViewMap.getOrPut(tag) { // 캐시된 웹뷰를 가져오거나 새로 생성
+            WebView(context).apply {
+                // WebView의 초기 설정 (한 번만 적용될 부분)
+                settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                settings.javaScriptCanOpenWindowsAutomatically = true
+                settings.setSupportMultipleWindows(false)
+                settings.loadWithOverviewMode = true
+                settings.useWideViewPort = true
+                settings.allowFileAccess = true
+                settings.allowContentAccess = true
+                 settings.cacheMode = WebSettings.LOAD_NO_CACHE // ⭐️ 필요하다면 캐시를 무시하고 항상 새로 로드하도록 설정 (선택 사항)
+            }
+        }
+        webView.loadUrl(url)
+        return webView
+    }
+
+    /* 지우지 말것 ,  새로 고침 방지모델
+    fun getOrCreateWebView(context: Context, tag: String, url: String): WebView {
         return webViewMap.getOrPut(tag) {
             WebView(context).apply {
                 settings.javaScriptEnabled = true
@@ -115,7 +136,7 @@ class HomeViewModel (
             }
         }
     }
-
+*/
 
     fun clearUserMessage() {
         _uiState.update { it.copy(userMessage = null) }
@@ -731,7 +752,10 @@ class HomeViewModel (
 
             // 1. 백엔드 API를 통해 회원 정보 삭제 시도
             try {
-                myApiService.deleteMemberData(firebaseUidToDelete)
+                val fcmToken = FirebaseMessaging.getInstance().token.await()
+                if (!fcmToken.isNullOrBlank()) {
+                    myApiService.deleteMemberData(firebaseUidToDelete, fcmToken)
+                }
                 Logger.d("ProfileViewModel", "백엔드 회원 데이터 삭제 성공.")
             } catch (e: Exception) {
                 Logger.w("ProfileViewModel", "백엔드 회원 데이터 삭제 실패: ${e.localizedMessage}")
