@@ -198,13 +198,20 @@ fun DiaryScreen(
                 }
             } else {
 
+                /*새로고침 방지 모델
                 val webView = remember {
                     viewModel.getOrCreateWebView(
                         context = context,
                         tag = "diary", // 고유 키 (탭별로 다르게 설정하세요)
                         url = "https://urdesk.co.kr/smartkofarmdiary?uid={${uiState.firebaseUid}",
                     )
-                }
+                } */
+
+                val webView = viewModel.getOrCreateWebView(
+                        context = context,
+                        tag = "diary", // 고유 키 (탭별로 다르게 설정하세요)
+                        url = "https://urdesk.co.kr/smartkofarmdiary?uid={${uiState.firebaseUid}",
+                    )
 
                 CommonWebView(
                     webView = webView,

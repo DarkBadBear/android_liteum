@@ -243,12 +243,13 @@ class MainActivity : ComponentActivity() {
                                             Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
                                         )
                                     )
+
                                 }
-                                if (info.isForceUpdate) {
+                              //  if (info.isForceUpdate) {
                                     finishAffinity()
-                                } else {
-                                    showUpdateDialogState = false
-                                }
+//                                } else {
+//                                    showUpdateDialogState = false
+//                                }
                             }
                         )
                     }
@@ -288,6 +289,10 @@ class MainActivity : ComponentActivity() {
         requestNotificationPermissionIfNeeded() // 알림 권한 요청 함수 호출  알림 권한 받고나서야 위치권한 받게 하려면?
     }
 
+    fun closeApp(activity: Activity) {
+        activity.finishAffinity() // 현재 Activity 스택의 모든 Activity를 종료
+        // 또는 System.exit(0) 사용 (권장하지 않음, Android OS가 앱 리소스 관리)
+    }
 
     private fun isNetworkAvailable(): Boolean {
         val connectivityManager =

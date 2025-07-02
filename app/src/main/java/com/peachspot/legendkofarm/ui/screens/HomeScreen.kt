@@ -98,13 +98,13 @@ fun HomeScreen(
 
     ) { innerPadding ->
         Box(modifier = modifier.padding(innerPadding).fillMaxSize()) {
-            val webView = remember {
+            val webView =
                 viewModel.getOrCreateWebView(
                     context = context,
                     tag = "home", // 고유 키 (탭별로 다르게 설정하세요)
                     url = "https://urdesk.co.kr/smartkofarm?uid={${uiState.firebaseUid}",
                 )
-            }
+
 
             CommonWebView(
                 webView = webView,
