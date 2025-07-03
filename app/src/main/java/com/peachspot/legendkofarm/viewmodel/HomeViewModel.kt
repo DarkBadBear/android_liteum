@@ -42,7 +42,12 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import android.app.Activity
+import android.os.Build
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
+import android.webkit.WebViewClient
 
 data class HomeUiState(
     val errorMessage: String? = null,
@@ -83,23 +88,46 @@ class HomeViewModel (
 
     private val webViewMap = mutableMapOf<String, WebView>()
 
-    fun refreshWebView(tag: String) {
 
-        val url = when(tag.lowercase()) {
-            "news" -> "https://urdesk.co.kr/smartkofarmnews/"
-            "home" ->"https://urdesk.co.kr/smartkofarm/"
-            "diary" -> "https://urdesk.co.kr/smartkofarmdiary/"
-            "exchange" -> "https://urdesk.co.kr/smartkofarmexchange/"
-            else -> "refresh"           // 기본 URL (필요하면)
+
+    fun refreshWebView(tag: String) {
+        val webView = webViewMap[tag]
+
+        if (webView == null) {
+            Log.w("WebViewManager", "WebView not found for tag: $tag")
+            return
         }
 
-            if(url == "refresh") {
-                webViewMap[tag]?.reload()
-            }else{
-                webViewMap[tag]?.loadUrl(url)
+        if (webView.parent == null) {
+            Log.e("WebViewManager", "WebView for tag $tag has no parent. Possibly already destroyed.")
+            return
+        }
+
+        val url = when (tag.lowercase()) {
+            "news" -> "https://urdesk.co.kr/smartkofarmnews/"
+            "home" -> "https://urdesk.co.kr/smartkofarm/"
+            "diary" -> "https://urdesk.co.kr/smartkofarmdiary/"
+            "exchange" -> "https://urdesk.co.kr/smartkofarmexchange/"
+            else -> null
+        }
+
+        when {
+            url != null -> {
+                Log.i("WebViewManager", "Reloading WebView for tag: $tag with URL: $url")
+                webView.loadUrl(url)
             }
 
+            !webView.url.isNullOrBlank() && webView.url != "about:blank" -> {
+                Log.i("WebViewManager", "Reloading current URL for tag: $tag -> ${webView.url}")
+                webView.reload()
+            }
+
+            else -> {
+                Log.w("WebViewManager", "No valid URL to reload for tag: $tag, skipping.")
+            }
+        }
     }
+
 
     fun getOrCreateWebView(context: Context, tag: String, url: String): WebView {
         val webView = webViewMap.getOrPut(tag) { // 캐시된 웹뷰를 가져오거나 새로 생성
@@ -108,14 +136,40 @@ class HomeViewModel (
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 settings.javaScriptCanOpenWindowsAutomatically = true
-                settings.setSupportMultipleWindows(false)
+                settings.setSupportMultipleWindows(false) // 팝업창을 열지 않는다면 false
                 settings.loadWithOverviewMode = true
                 settings.useWideViewPort = true
                 settings.allowFileAccess = true
                 settings.allowContentAccess = true
-                 settings.cacheMode = WebSettings.LOAD_NO_CACHE // ⭐️ 필요하다면 캐시를 무시하고 항상 새로 로드하도록 설정 (선택 사항)
+                // settings.cacheMode = WebSettings.LOAD_NO_CACHE // ⭐️ 이 줄을 일단 주석 처리하거나 제거!
+                settings.cacheMode = WebSettings.LOAD_DEFAULT // 또는 LOAD_DEFAULT로 변경
+                isFocusable = true
+                isFocusableInTouchMode = true
+                requestFocus()
+
+                // ⭐️ WebViewClient 및 WebChromeClient 추가 (로딩 상태 및 오류 확인용)
+                webViewClient = object : WebViewClient() {
+                    override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
+                        super.onReceivedError(view, request, error)
+                        Log.e("WebViewLoad", "Error loading URL: ${request?.url}, Description: ${error?.description}, Code: ${error?.errorCode}")
+                        // 여기서 사용자에게 오류 메시지를 보여주거나, 대체 페이지로 리다이렉트할 수 있습니다.
+                    }
+
+                    override fun onPageFinished(view: WebView?, url: String?) {
+                        super.onPageFinished(view, url)
+                        Log.d("WebViewLoad", "Page finished loading: $url")
+                    }
+                }
+
+                webChromeClient = object : WebChromeClient() {
+                    override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                        super.onProgressChanged(view, newProgress)
+                        Log.d("WebViewProgress", "Loading progress: $newProgress%")
+                    }
+                }
             }
         }
+
         webView.loadUrl(url)
         return webView
     }
