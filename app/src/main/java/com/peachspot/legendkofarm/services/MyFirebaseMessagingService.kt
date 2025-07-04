@@ -45,8 +45,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         private const val KEY_SERVER_MESSAGE = "body"  // 예시: 서버에서 "body" 또는 "message"로 보낸다면
         private const val KEY_SERVER_IMAGE = "image" // 예시: 서버에서 "image"로 보낸다면
         private const val KEY_SERVER_LINK = "link"   // 예시: 서버에서 "link"로 보낸다면
-
-
     }
 
     //final BoobiDB dbManager = new BoobiDB(getApplicationContext(), "Boobischedule.db", null, 1);

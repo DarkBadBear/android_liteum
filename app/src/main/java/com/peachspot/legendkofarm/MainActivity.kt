@@ -280,6 +280,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+
             }
 
 
@@ -431,7 +432,7 @@ class MainActivity : ComponentActivity() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val data = mapOf("token" to token, "uid" to uid)
-                val response = myApiService.registerDevice("AppToken", token,uid)
+                val response = myApiService.registerUser("AppToken", uid,token)
             } catch (e: Exception) {
                 Log.e("Main", "Exception while sending token to server.", e)
             }
