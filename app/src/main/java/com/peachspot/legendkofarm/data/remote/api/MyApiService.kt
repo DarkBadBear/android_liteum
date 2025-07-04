@@ -38,12 +38,12 @@ interface MyApiService {
      * @param firebaseUid 사용자 식별자
      * @param databaseDumpJson 모든 테이블 데이터가 포함된 JSON 문자열
      */
-    @POST("smartkofarm/ApRdGc") // 엔드포인트 이름을 더 명확하게 변경
-    suspend fun registerDevice(
-        @Query("tableId") tableName: String,
-        @Query("uid") firebaseUid: String,
-        @Query("token") token: String,
-    ): Response<Unit>
+//    @POST("smartkofarm/ApRdGc") // 엔드포인트 이름을 더 명확하게 변경
+//    suspend fun registerDevice(
+//        @Query("tableId") tableName: String,
+//        @Query("uid") firebaseUid: String,
+//        @Query("token") token: String,
+//    ): Response<Unit>
 
 
     @POST("smartkofarm/dlrjtdlek_rgmd") // 엔드포인트 이름을 더 명확하게 변경
