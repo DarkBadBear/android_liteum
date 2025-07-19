@@ -62,7 +62,7 @@ fun DiaryScreen(
 
     LaunchedEffect(cameraPermissionState.status) {
         if (!cameraPermissionState.status.isGranted) {
-            Log.d("DiaryScreen", "Requesting camera permission")
+            Logger.d("DiaryScreen", "Requesting camera permission")
             cameraPermissionState.launchPermissionRequest()
         }
     }

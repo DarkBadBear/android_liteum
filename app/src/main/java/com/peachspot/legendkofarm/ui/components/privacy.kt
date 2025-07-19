@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.sp
 fun PrivacyPolicyLink() {
     val uriHandler = LocalUriHandler.current
     val privacyPolicyUrl =
-        "https://peachspot.co.kr/legendkofarm/privacy" // Replace with your actual URL
+        "https://urdesk.co.kr/legendkofarm/privacy" // Replace with your actual URL
 
     val annotatedString = buildAnnotatedString {
         append(" [")

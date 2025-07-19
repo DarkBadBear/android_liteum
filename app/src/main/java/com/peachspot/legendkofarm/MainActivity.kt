@@ -68,6 +68,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 import android.provider.Settings
+import androidx.activity.enableEdgeToEdge
+import com.peachspot.legendkofarm.util.Logger
 
 ///@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -96,10 +98,10 @@ class MainActivity : ComponentActivity() {
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
             if (isGranted) {
-                Log.d(TAG, "POST_NOTIFICATIONS permission granted.")
+                Logger.d(TAG, "POST_NOTIFICATIONS permission granted.")
                 // 권한이 허용된 경우 처리 (예: FCM 토큰 가져오기 등)
             } else {
-                Log.d(TAG, "POST_NOTIFICATIONS permission denied.")
+                Logger.d(TAG, "POST_NOTIFICATIONS permission denied.")
                 Toast.makeText(this, "알림 권한이 거부되었습니다. 일부 기능이 제한될 수 있습니다.", Toast.LENGTH_LONG).show()
             }
         }
@@ -121,6 +123,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
 
@@ -360,21 +363,21 @@ class MainActivity : ComponentActivity() {
                     this,
                     Manifest.permission.POST_NOTIFICATIONS
                 ) == PackageManager.PERMISSION_GRANTED -> {
-                    Log.d(TAG, "POST_NOTIFICATIONS permission already granted.")
+                    Logger.d(TAG, "POST_NOTIFICATIONS permission already granted.")
                 }
 
                 shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) -> {
-                    Log.d(TAG, "Showing rationale for POST_NOTIFICATIONS permission.")
+                    Logger.d(TAG, "Showing rationale for POST_NOTIFICATIONS permission.")
                     requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
 
                 else -> {
-                    Log.d(TAG, "Requesting POST_NOTIFICATIONS permission.")
+                    Logger.d(TAG, "Requesting POST_NOTIFICATIONS permission.")
                     requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
         } else {
-            Log.d(
+            Logger.d(
                 TAG,
                 "Notification permission is not required to be requested at runtime for API < 33."
             )
@@ -405,7 +408,7 @@ class MainActivity : ComponentActivity() {
         remoteConfig.setDefaultsAsync(R.xml.remote_config_defaults)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    Log.d(TAG, "Remote Config defaults loaded.")
+                    Logger.d(TAG, "Remote Config defaults loaded.")
                 } else {
                     Log.e(TAG, "Failed to load Remote Config defaults.", task.exception)
                 }
@@ -457,7 +460,7 @@ class MainActivity : ComponentActivity() {
                         val updateMessage = remoteConfig.getString("update_message")
                         val storeUrl = remoteConfig.getString("store_url")
                         val currentVersionCode = com.peachspot.legendkofarm.BuildConfig.VERSION_CODE
-                        Log.d(
+                        Logger.d(
                             TAG,
                             "Current Version Code: $currentVersionCode, Latest Version Code: $latestVersionCode"
                         )
@@ -469,7 +472,7 @@ class MainActivity : ComponentActivity() {
                                 storeUrl.ifEmpty { "https://play.google.com/store/apps/details?id=$packageName" })
                             showUpdateDialogState = true
                         } else {
-                            Log.d(TAG, "App is up to date.")
+                            Logger.d(TAG, "App is up to date.")
                         }
                     }
                 } else {
@@ -623,7 +626,7 @@ fun AppNavHost(
         intent?.let {
             val link = it.getStringExtra(MyFirebaseMessagingService.EXTRA_LINK)
             if (link != null) {
-                Log.d("MainActivity", "Link from notification: $link")
+                Logger.d("MainActivity", "Link from notification: $link")
                 // 여기서 link를 사용하여 WebView를 로드하거나 다른 동작을 수행
                 // 예: showWebViewDialog(link) 또는 navigateToLink(link)
             }

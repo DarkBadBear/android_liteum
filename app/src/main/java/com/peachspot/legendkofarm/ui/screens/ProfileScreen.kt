@@ -146,7 +146,7 @@ fun ProfileScreen(
 
     fun website() {
         val url =
-            "https://www.peachspot.co.kr/legendkofarm" // 여기에 실제 웹사이트 주소 입력
+            "https://www.urdesk.co.kr/smartkofarm/home" // 여기에 실제 웹사이트 주소 입력
         try {
             uriHandler.openUri(url)
         } catch (e: Exception) {
@@ -157,7 +157,7 @@ fun ProfileScreen(
     }
     fun privacy() {
         val url =
-            "https://www.peachspot.co.kr/legendkofarm/privacy" // 여기에 실제 웹사이트 주소 입력
+            "https://www.urdesk.co.kr/smartkofarm/privacy" // 여기에 실제 웹사이트 주소 입력
         try {
             uriHandler.openUri(url)
         } catch (e: Exception) {

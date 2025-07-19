@@ -68,9 +68,10 @@ fun Long.toLocalDateTime(): LocalDateTime {
 
 
 
+
 object Logger {
-    private const val GLOBAL_TAG = "MyAppTag" // 앱 전체 기본 태그
-    var enabled = BuildConfig.DEBUG // 디버그 빌드에서만 기본으로 활성화
+    private const val GLOBAL_TAG = "MyAppTag"
+    var enabled = BuildConfig.DEBUG
 
     fun d(tag: String, message: String) {
         if (enabled) {
@@ -80,28 +81,39 @@ object Logger {
 
     fun w(tag: String, message: String, throwable: Throwable? = null) {
         if (enabled) {
-            Log.w(tag, message)
+            if (throwable != null) {
+                Log.w(tag, message, throwable)
+            } else {
+                Log.w(tag, message)
+            }
         }
     }
 
-    fun d(message: String) { // 기본 태그 사용
+    fun d(message: String) {
         if (enabled) {
             Log.d(GLOBAL_TAG, message)
         }
     }
 
     fun e(tag: String, message: String, throwable: Throwable? = null) {
-        if (enabled) { // 에러 로그는 항상 출력하거나, 별도 플래그로 관리 가능
-            Log.e(tag, message, throwable)
-        }
-    }
-
-    fun e(message: String, throwable: Throwable? = null) { // 기본 태그 사용
         if (enabled) {
-            Log.e(GLOBAL_TAG, message, throwable)
+            if (throwable != null) {
+                Log.e(tag, message, throwable)
+            } else {
+                Log.e(tag, message)
+            }
         }
     }
 
+    fun e(message: String, throwable: Throwable? = null) {
+        if (enabled) {
+            if (throwable != null) {
+                Log.e(GLOBAL_TAG, message, throwable)
+            } else {
+                Log.e(GLOBAL_TAG, message)
+            }
+        }
+    }
 
-    // i(), v(), w() 등 필요한 다른 레벨도 유사하게 추가
+    // 필요하면 i(), v() 등도 추가 가능
 }

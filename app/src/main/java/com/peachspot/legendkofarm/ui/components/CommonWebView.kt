@@ -24,6 +24,7 @@ import android.view.ViewGroup
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.peachspot.legendkofarm.util.Logger
 
 // com.google.android.gms.common.wrappers.Wrappers.packageManager 는 제거했습니다.
 // 안드로이드 기본 packageManager를 사용합니다.
@@ -58,7 +59,7 @@ private fun handleCustomUrl(context: Context, view: WebView?, url: String): Bool
             val intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME)
             val packageName = intent.`package`
             var storeUrl: String? = null
-            Log.d("nicap AAAAAAAAAAAA", "inside handdle");
+            Logger.d("nicap AAAAAAAAAAAA", "inside handdle");
             when {
                 url.contains("ispmobile") -> {
                     storeUrl = "http://mobile.vpay.co.kr/jsp/MISP/andown.jsp"
@@ -388,7 +389,7 @@ fun CommonWebView(
 
                     override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
                         consoleMessage?.let {
-                            Log.d(
+                            Logger.d(
                                 "WebViewConsole",
                                 "[${it.messageLevel()}] ${it.message()} -- ${it.sourceId()}:${it.lineNumber()}"
                             )

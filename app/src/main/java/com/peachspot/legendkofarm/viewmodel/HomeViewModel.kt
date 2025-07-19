@@ -157,14 +157,14 @@ class HomeViewModel (
 
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
-                        Log.d("WebViewLoad", "Page finished loading: $url")
+                        Logger.d("WebViewLoad", "Page finished loading: $url")
                     }
                 }
 
                 webChromeClient = object : WebChromeClient() {
                     override fun onProgressChanged(view: WebView?, newProgress: Int) {
                         super.onProgressChanged(view, newProgress)
-                        Log.d("WebViewProgress", "Loading progress: $newProgress%")
+                        Logger.d("WebViewProgress", "Loading progress: $newProgress%")
                     }
                 }
             }

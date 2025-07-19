@@ -17,6 +17,7 @@ import com.peachspot.legendkofarm.MainActivity
 import com.peachspot.legendkofarm.R
 import com.peachspot.legendkofarm.data.db.AppDatabase
 import com.peachspot.legendkofarm.data.db.NotificationEntity
+import com.peachspot.legendkofarm.util.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -66,10 +67,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
 
-        Log.d(TAG, "From: ${remoteMessage.from}")
-        Log.d(TAG, "Message ID: ${remoteMessage.messageId}")
-        Log.d(TAG, "Notification: ${remoteMessage.notification}")
-        Log.d(TAG, "Data: ${remoteMessage.data}")
+        Logger.d(TAG, "From: ${remoteMessage.from}")
+        Logger.d(TAG, "Message ID: ${remoteMessage.messageId}")
+        Logger.d(TAG, "Notification: ${remoteMessage.notification}")
+        Logger.d(TAG, "Data: ${remoteMessage.data}")
 
 
         var title: String? = null
@@ -83,7 +84,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             message = remoteMessage.data[KEY_SERVER_MESSAGE]
             imageUrl = remoteMessage.data[KEY_SERVER_IMAGE]
             link = remoteMessage.data[KEY_SERVER_LINK]
-            Log.d(
+            Logger.d(
                 TAG,
                 "Extracted from data payload: title='$title', message='$message', imageUrl='$imageUrl', link='$link'"
             )
@@ -94,7 +95,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             if (title == null) title = notification.title
             if (message == null) message = notification.body
             if (imageUrl == null) imageUrl = notification.imageUrl?.toString()
-//            Log.d(
+//            Logger.d(
 //                TAG,
 //                "Extracted from notification payload (if data was missing): title='${notification.title}', body='${notification.body}', imageUrl='${notification.imageUrl}'"
 //            )
@@ -133,7 +134,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         serviceScope.launch {
             try {
                 notificationDao.insertNotification(notification)
-                Log.d("FCM", "Notification saved to DB: $notification")
+                Logger.d("FCM", "Notification saved to DB: $notification")
             } catch (e: Exception) {
                 Log.e("FCM", "Error saving notification to DB", e)
             }
@@ -180,7 +181,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             link?.let {
                 if (it.isNotBlank()) {
                     putExtra(EXTRA_LINK, it) // EXTRA_LINK 상수 사용
-                    Log.d(TAG, "Notification link: '$it' added to intent extras.")
+                    Logger.d(TAG, "Notification link: '$it' added to intent extras.")
                 }
             }
 
@@ -253,7 +254,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     override fun onNewToken(token: String) {
-        Log.d(TAG, "Refreshed token: $token")
+        Logger.d(TAG, "Refreshed token: $token")
         // 서버에 새 토큰을 등록하는 로직 (필요시 구현)
         // sendRegistrationToServer(token)
     }
