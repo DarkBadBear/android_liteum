@@ -70,19 +70,22 @@ fun legendkofarmiTheme( // Composable 함수명은 PascalCase (대문자로 시�
         SideEffect { // Composable이 구성될 때마다 실행
             val window = (view.context as Activity).window
 
-            // 앱 콘텐츠가 시스템 UI(상태바, 내비게이션바) 영역까지 확장되도록 설정
+            // 앱 콘텐츠가 시스템 UI(상태바, 내비게이션바) 영역까지 확장되도록 설정합니다.
+            // enableEdgeToEdge()를 호출했으므로 이 설정은 계속 유효합니다.
             WindowCompat.setDecorFitsSystemWindows(window, false)
 
-            // 상태 바 색상을 완전히 투명하게 설정
-            window.statusBarColor = Color.Transparent.toArgb()
+            // !!! 중요: window.statusBarColor 설정은 더 이상 필요 없으며,
+            // Android 15에서 지원 중단된 API를 사용합니다.
+            // 대신 MaterialTheme의 colorScheme과 Scaffold가 상태 바 색상을 처리합니다.
 
             // 상태 바 아이콘 (시간, 와이파이 등)이 잘 보이도록 색상 설정
             // useDarkTheme가 true (어두운 테마)면 밝은 아이콘, useDarkTheme가 false (밝은 테마)면 어두운 아이콘
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !useDarkTheme
 
             // (선택 사항) 내비게이션 바도 투명하게 설정하고 싶다면
-            // window.navigationBarColor = Color.Transparent.toArgb()
             // WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !useDarkTheme
+            // 위 설정을 통해 내비게이션 바 아이콘 색상만 제어하고, 실제 바의 배경은 투명하게 됩니다.
+            // navigationBarColor를 직접 설정하는 것은 대부분의 경우 필요하지 않습니다.
         }
     }
 

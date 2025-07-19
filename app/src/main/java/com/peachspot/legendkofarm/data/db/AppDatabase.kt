@@ -37,7 +37,7 @@ public abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .fallbackToDestructiveMigration() // 마이그레이션 전략에 따라 변경 가능
+                    .fallbackToDestructiveMigration(false) // 마이그레이션 전략에 따라 변경 가능
                     .build()
                 INSTANCE = instance
                 instance

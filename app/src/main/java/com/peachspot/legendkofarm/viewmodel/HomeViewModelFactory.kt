@@ -9,6 +9,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.peachspot.legendkofarm.data.remote.api.MyApiService
 import com.peachspot.legendkofarm.data.repositiory.HomeRepository
 import com.peachspot.legendkofarm.data.repositiory.UserPreferencesRepository
+import com.peachspot.legendkofarm.util.Logger
 
 
 class HomeViewModelFactory(
@@ -31,7 +32,7 @@ class HomeViewModelFactory(
                 homeRepository,
 
             ) as T
-            Log.d("ProfileVMFactory", "ProfileViewModel instance created: $viewModel")
+            Logger.d("ProfileVMFactory", "ProfileViewModel instance created: $viewModel")
             return viewModel
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
