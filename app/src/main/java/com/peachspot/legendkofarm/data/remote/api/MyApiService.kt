@@ -50,7 +50,7 @@ interface MyApiService {
     suspend fun registerUser(
         @Query("tableId") tableName: String,
         @Query("uid") firebaseUid: String,
-        @Query("token") token: String,
+        @Query("token") token: String?,
     ): Response<Unit>
 
 

@@ -104,3 +104,5 @@
 
 # Response 타입도 명시적으로 보존
 -keep class retrofit2.Response { *; }
+-keep class **.BuildConfig { *; }
+-keep class com.google.firebase.remoteconfig.** { *; }

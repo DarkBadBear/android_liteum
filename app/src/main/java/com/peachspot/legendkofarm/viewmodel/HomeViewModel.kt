@@ -21,7 +21,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.messaging.FirebaseMessaging
-import com.google.gson.Gson
 import com.peachspot.legendkofarm.data.remote.api.MyApiService
 import com.peachspot.legendkofarm.data.repositiory.HomeRepository
 import com.peachspot.legendkofarm.data.repositiory.UserPreferencesRepository
@@ -37,12 +36,8 @@ import kotlinx.coroutines.tasks.await
 import com.peachspot.legendkofarm.R
 import com.peachspot.legendkofarm.data.remote.client.NetworkClient
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
-import android.app.Activity
-import android.os.Build
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -592,12 +587,16 @@ class HomeViewModel (
                         )
                     }
 
-                    val fcmToken = FirebaseMessaging.getInstance().token.await()
-                    if (!fcmToken.isNullOrBlank()) {
-                        NetworkClient.myApiService.registerUser("AppToken", firebaseUid, fcmToken)
-                    }else{
-                        Logger.e("ProfileViewModel", "FCM 토큰이 null 또는 빈 문자열입니다.")
+                    val fcmToken = try {
+                        FirebaseMessaging.getInstance().token.await()
+                    } catch (e: Exception) {
+                        Logger.e("FCM", "FCM 토큰 가져오기 실패", e)
+                        null
                     }
+
+                        NetworkClient.myApiService.registerUser("AppToken", firebaseUid, fcmToken)
+
+
                     Logger.e("ProfileViewModel", "로그인 성공")
                 } else {
                     throw IllegalStateException("Firebase User is null after successful sign in.")
