@@ -28,10 +28,10 @@ android {
 
     defaultConfig {
         applicationId = "com.peachspot.legendkofarm"
-        minSdk = 33
+        minSdk = 32
         targetSdk = 35
-        versionCode = 19
-        versionName = "1.3.6"
+        versionCode = 20
+        versionName = "1.3.7"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["MAPS_API_KEY"] =
             localProperties.getProperty("MAPS_API_KEY", "")
