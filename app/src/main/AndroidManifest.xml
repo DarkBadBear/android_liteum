@@ -27,35 +27,61 @@
         android:usesCleartextTraffic="true"
         android:label="@string/app_name">
 
-    <!-- API 키를 위한 meta-data는 여기에 한 번만 있어야 합니다. -->
-    <meta-data
-        android:name="com.google.android.geo.API_KEY"
-        android:value="${MAPS_API_KEY}" />
-    <meta-data
-        android:name="com.google.firebase.messaging.default_notification_channel_id"
-        android:value="@string/default_notification_channel_id" />
-    <meta-data
-        android:name="com.google.firebase.messaging.default_notification_icon"
-        android:resource="@drawable/legendkofarm" />
-    <meta-data
-        android:name="com.google.firebase.messaging.default_notification_color"
-        android:resource="@color/colorAccent" />
-    <!-- MainActivity 선언도 여기에 한 번만 있어야 합니다. -->
-    <activity
-        android:name="com.peachspot.legendkofarm.MainActivity"
-        android:exported="true"
-        android:launchMode="singleTop"
-        android:configChanges="screenSize|orientation">
-        <intent-filter>
-            <action android:name="android.intent.action.MAIN" />
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent-filter>
+        <!-- API 키를 위한 meta-data는 여기에 한 번만 있어야 합니다. -->
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="@string/default_notification_channel_id" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/legendkofarm" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/colorAccent" />
+        <!-- MainActivity 선언도 여기에 한 번만 있어야 합니다. -->
+        <activity
+            android:name="com.peachspot.legendkofarm.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:configChanges="screenSize|orientation">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
 
-        <intent-filter>
-            <action android:name=".MainActivity" />
-            <category android:name="android.intent.category.DEFAULT" />
-        </intent-filter>
-    </activity>
+            <intent-filter>
+                <action android:name=".MainActivity" />
+                <category android:name="android.intent.category.DEFAULT" />
+
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="legendkofarm" android:host="open" />
+            </intent-filter>
+        </activity>
+        <!-- Kakao SDK: 로그인 Redirect -->
+        <activity
+            android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <!-- [중요] {네이티브앱키}는 카카오 개발자 콘솔에서 발급받은 네이티브 앱 키 -->
+                <data android:scheme="kakao{네이티브앱키}" />
+            </intent-filter>
+        </activity>
+
+
+
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -69,5 +95,5 @@
 
 
     </application>
-    </manifest>
+</manifest>
 

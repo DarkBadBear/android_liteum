@@ -19,7 +19,7 @@ class TimestampListConverter {
                 // 로그를 남기거나, 오류 처리를 하거나, null을 반환하여 해당 항목을 제외할 수 있습니다.
                 // 현재는 mapNotNull에 의해 null이 반환되어 제외됩니다.
                 // 엄격한 처리가 필요하다면 여기서 예외를 다시 던지거나 기본값을 사용할 수 있습니다.
-                Log.e(TAG, "Failed to convert '$timestampString' to Long. It will be excluded.", e)
+                Logger.e(TAG, "Failed to convert '$timestampString' to Long. It will be excluded.", e)
                 null
             }
         }

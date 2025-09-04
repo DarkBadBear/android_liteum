@@ -56,6 +56,9 @@
 # 데이터 클래스 관련 (프로젝트별로 조정 필요)
 -keep class com.peachspot.legendkofarm.data.** { *; }
 -keep class com.peachspot.legendkofarm.model.** { *; }
+-keepattributes Signature
+-keepattributes *Annotation*
+
 
 # Coroutines 관련
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
@@ -104,5 +107,7 @@
 
 # Response 타입도 명시적으로 보존
 -keep class retrofit2.Response { *; }
+
 -keep class **.BuildConfig { *; }
 -keep class com.google.firebase.remoteconfig.** { *; }
+
