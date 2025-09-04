@@ -1,92 +1,96 @@
 package com.peachspot.legendkofarm.data.remote.api
 
 
-import okhttp3.RequestBody
+import com.peachspot.legendkofarm.data.core.CommonResponseData
+import com.peachspot.legendkofarm.data.core.NotificationToggleRequest
+import com.peachspot.legendkofarm.data.core.NotificationToggleResponse
+
+import com.peachspot.legendkofarm.data.db.UrlData
+import com.peachspot.legendkofarm.data.db.UrlEntity
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
 import retrofit2.http.Query
 
 
+// 이 데이터 클래스는 API 응답이 특정 래퍼 객체로 감싸져 있을 때 사용됩니다.
+// 현재 MyApiService의 메서드들이 Response<T>를 직접 반환하므로,
+// 이 래퍼를 사용하려면 메서드 반환 타입을 Response<ApiResponseWrapper<T>>로 변경해야 합니다.
+// (예: Response<ApiResponseWrapper<List<UrlData>>>)
+// 현재 HomeRepositoryImpl은 Response<List<UrlData>> 또는 Response<UrlData>를 직접 기대하므로,
+// 이 래퍼를 사용하려면 HomeRepositoryImpl도 함께 수정해야 합니다.
+//data class ApiResponseWrapper<T>(
+//    val data: T? // 실제 데이터, null일 수도 있음을 고려
+//    // 필요한 경우 다른 공통 필드 (예: status, message 등) 추가
+//)
+
 data class ApiResponseWrapper<T>(
-    val data: T // 실제 데이터 리스트, null일 수도 있음을 고려
-    // 필요한 경우 다른 공통 필드 (예: status, message 등) 추가
+    val res_cd: String,
+    val msg: String,
+    val data: T?
 )
+
 
 
 interface MyApiService {
 
+    @POST("legendkofarm/notification_toggle")
+    suspend fun toggleNotificationState(
+        @Body request: NotificationToggleRequest
+    ):Response<ApiResponseWrapper<NotificationToggleResponse>>
 
-    @POST("smartkofarm/delete_member")
+
+
+    @POST("legendkofarm/dlrjtdlek_rgmd") // 엔드포인트 이름을 더 명확하게 변경
+    suspend fun registerUser(
+        @Query("uid") firebaseUid: String,
+        @Query("token") token: String,
+    ): Response<Unit>
+
+    @POST("legendkofarm/drop_rgmd") // 엔드포인트 이름을 더 명확하게 변경
     suspend fun deleteMemberData(
         @Query("uid") firebaseUid: String,
-        @Query("token") token: String
-        ): Response<Unit>
-
-//    @POST("legendkofarm/update_building_data") // 실제 API 엔드포인트로 변경하세요
-//    suspend fun updateBuildingData(@Body logData: ExerciseLogUpdateRequest): Response<Unit>
-//
-//    @POST("legendkofarm/update_mountain_data") // 실제 API 엔드포인트로 변경하세요
-//    suspend fun updateMountainData(@Body logData: MountainLogUpdateRequest): Response<Unit>
-//
-//    @POST("legendkofarm/update_stair_data") // 실제 API 엔드포인트로 변경하세요
-//    suspend fun updateStairData(@Body logData: StairLogUpdateRequest): Response<Unit>
-
-
-    /**
-     * 전체 데이터베이스 내용을 JSON 문자열 형태로 업로드합니다.
-     * @param firebaseUid 사용자 식별자
-     * @param databaseDumpJson 모든 테이블 데이터가 포함된 JSON 문자열
-     */
-//    @POST("smartkofarm/ApRdGc") // 엔드포인트 이름을 더 명확하게 변경
-//    suspend fun registerDevice(
-//        @Query("tableId") tableName: String,
-//        @Query("uid") firebaseUid: String,
-//        @Query("token") token: String,
-//    ): Response<Unit>
-
-
-    @POST("smartkofarm/dlrjtdlek_rgmd") // 엔드포인트 이름을 더 명확하게 변경
-    suspend fun registerUser(
-        @Query("tableId") tableName: String,
-        @Query("uid") firebaseUid: String,
-        @Query("token") token: String?,
+        @Query("token") token: String,
     ): Response<Unit>
 
 
-///// 파이어베이스 아이디를  서버로 전송함
-    @POST("smartkofarm/uploadExerciseLog") // 엔드포인트 이름을 더 명확하게 변경
-    suspend fun uploadDatabaseDumpJson(
-    @Query("tableId") tableName: String,
-    @Query("uid") firebaseUid: String, // 사용자 식별을 위해 UID를 쿼리 파라미터로 추가하는 것을 고려
-    @Body databaseDumpJson: RequestBody // String 대신 RequestBody 사용 권장 (특히 대용량일 경우)
-): Response<Unit>
+    @POST("legendkofarm/urls")
+    suspend fun getAllUrls(
+        @Query("uid") firebaseUid: String,
+    ): Response<List<UrlData>> // ✅ DTO 사용
 
-//
-//    // 반환 타입을 ApiResponseWrapper로 변경하여 실제 JSON 구조에 맞춤
-//    @GET("legendkofarm/downExerciseLog")
-//    suspend fun downExerciseJson(
-//        @Query("tableId") tableName: String,
-//        @Query("uid") firebaseUid: String,
-//    ): Response<ApiResponseWrapper<List<ExerciseLogs>>>
-//
-//    @GET("legendkofarm/downExerciseLog")
-//    suspend fun downMountainJson(
-//        @Query("tableId") tableName: String,
-//        @Query("uid") firebaseUid: String,
-//    ): Response<ApiResponseWrapper<List<MountainLog>>>
-//
-//    @GET("legendkofarm/downExerciseLog")
-//    suspend fun downStairJson(
-//        @Query("tableId") tableName: String,
-//        @Query("uid") firebaseUid: String,
-//    ): Response<ApiResponseWrapper<List<StairLogs>>>
-//
-//    @GET("legendkofarm/downExerciseLog")
-//    suspend fun downTotalStatJson(
-//        @Query("tableId") tableName: String,
-//        @Query("uid") firebaseUid: String,
-//    ): Response<ApiResponseWrapper<List<TotalStats>>>
+    @POST("legendkofarm/create")
+    suspend fun addUrl(
+        @Query("uid") firebaseUid: String,
+        @Body urlData: UrlData
+    ): Response<ApiResponseWrapper<UrlData>>
+
+
+    @POST("legendkofarm/delete")
+    suspend fun deleteUrl(
+        @Query("uid") firebaseUid: String,
+        @Query("id") id: Long
+    ): Response<Unit>
+
+    @POST("legendkofarm/toggle")
+    suspend fun toggleSiteActive(
+        @Query("uid") firebaseUid: String,
+        @Query("id") id: Long
+    ): Response<ApiResponseWrapper<CommonResponseData>>
+
+
+
+    @POST("legendkofarm/update")
+    suspend fun updateUrl(
+        @Query("uid") firebaseUid: String,
+        @Query("id") id: Long,
+        @Body urlData: UrlData
+    ): Response<UrlData>
+
+    @POST("legendkofarm/check")
+    suspend fun checkSiteManual(
+        @Query("uid") firebaseUid: String,
+        @Query("id") id: Long,
+    ): Response<UrlData>
 
 }
-

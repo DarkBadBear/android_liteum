@@ -22,14 +22,6 @@
           }
         },
         {
-          "client_id": "562206454519-s7ujuii958skj0vq15jr56pl2d663k36.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.peachspot.legendkofarm",
-            "certificate_hash": "7f1096020c8b35cc36842a6ba46278fcbb86a83d"
-          }
-        },
-        {
           "client_id": "562206454519-600acavebt0hhjkudijr3l4pd3pqcpgm.apps.googleusercontent.com",
           "client_type": 3
         }

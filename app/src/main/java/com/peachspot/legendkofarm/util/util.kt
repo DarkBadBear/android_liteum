@@ -1,11 +1,5 @@
 package com.peachspot.legendkofarm.util
 
-
-// androidx.core.i18n.DateTimeFormatter를 사용하므로, 해당 의존성이 필요합니다.
-// import androidx.core.i18n.DateTimeFormatter as AndroidXDateTimeFormatter // 별칭 사용 (선택 사항)
-
-// java.time.format.DateTimeFormatter를 사용하지 않는다면 아래 임포트는 필요 없습니다.
-// import java.time.format.DateTimeFormatter
 import android.util.Log
 import com.peachspot.legendkofarm.BuildConfig
 
@@ -30,13 +24,9 @@ fun Long?.toFormattedTimeStringOrNull(): String? {
     return try {
         val instant = Instant.ofEpochMilli(this)
         val localTime = instant.atZone(ZoneId.systemDefault()).toLocalTime()
-        // androidx.core.i18n.DateTimeFormatter 사용
-        // 만약 java.time.DateTimeFormatter와 혼동을 피하고 싶다면 별칭(alias) 사용 가능
-        // localTime.format(AndroidXDateTimeFormatter.ofPattern("HH:mm:ss"))
         localTime.format(DateTimeFormatter.ofPattern("HH:mm:ss"))
-    } catch (e: Exception) { // 보다 구체적인 예외를 잡는 것이 좋지만, 여기서는 포괄적으로 처리
-        // 실제 앱에서는 Logcat에만 출력하는 것보다 로깅 라이브러리 사용을 권장합니다.
-        Log.e("TimeUtil", "Error formatting time: ${e.message}", e)
+    } catch (e: Exception) {
+        Logger.e("TimeUtil", "Error formatting time: ${e.message}", e)
         null
     }
 }
@@ -54,10 +44,9 @@ fun Long?.toFormattedTimeStringOrDefault(defaultString: String = "N/A"): String 
     return try {
         val instant = Instant.ofEpochMilli(this)
         val localTime = instant.atZone(ZoneId.systemDefault()).toLocalTime()
-        // androidx.core.i18n.DateTimeFormatter 사용
         localTime.format(DateTimeFormatter.ofPattern("HH:mm:ss"))
     } catch (e: Exception) {
-        Log.e("TimeUtil", "Error formatting time: ${e.message}", e)
+        Logger.e("TimeUtil", "Error formatting time: ${e.message}", e)
         defaultString
     }
 }
@@ -65,7 +54,6 @@ fun Long?.toFormattedTimeStringOrDefault(defaultString: String = "N/A"): String 
 fun Long.toLocalDateTime(): LocalDateTime {
     return Instant.ofEpochMilli(this).atZone(ZoneId.systemDefault()).toLocalDateTime()
 }
-
 
 
 
