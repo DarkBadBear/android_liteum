@@ -5,7 +5,7 @@
     </domain-config>
 
     <domain-config cleartextTrafficPermitted="false">
-        <domain includeSubdomains="true">peachspot.co.kr</domain>
+        <domain includeSubdomains="true">urdesk.co.kr</domain>
     </domain-config>
 
 
