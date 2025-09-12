@@ -1,6 +1,5 @@
 package com.peachspot.legendkofarm
 
-
 import android.Manifest
 import android.app.Activity
 import android.app.Application
@@ -15,8 +14,6 @@ import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
 import android.webkit.ValueCallback
@@ -51,51 +48,47 @@ import com.google.firebase.appcheck.appCheck
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.messaging.FirebaseMessaging
-import com.google.firebase.remoteconfig.ktx.remoteConfigSettings
 import com.google.firebase.remoteconfig.remoteConfig
+import com.google.firebase.remoteconfig.remoteConfigSettings
 import com.peachspot.legendkofarm.data.db.AppDatabase
 import com.peachspot.legendkofarm.data.remote.client.NetworkClient.myApiService
-import com.peachspot.legendkofarm.data.repository.HomeRepositoryImpl
-import com.peachspot.legendkofarm.data.repository.UserPreferencesRepository
-import com.kakao.sdk.common.KakaoSdk
-import com.peachspot.legendkofarm.ui.profile.UserProfileViewModel
+import com.peachspot.legendkofarm.data.repositiory.HomeRepositoryImpl
+import com.peachspot.legendkofarm.data.repositiory.UserPreferencesRepository
+import com.peachspot.legendkofarm.services.MyFirebaseMessagingService
+import com.peachspot.legendkofarm.ui.navigation.AppScreenRoutes
+import com.peachspot.legendkofarm.ui.screens.MainScreen
 
-import com.peachspot.legendkofarm.ui.theme.legendkofarmTheme
-import com.peachspot.legendkofarm.ui.url.UrlViewModel
-
+import com.peachspot.legendkofarm.ui.theme.legendkofarmiTheme
+import com.peachspot.legendkofarm.viewmodel.HomeViewModel
+import com.peachspot.legendkofarm.viewmodel.HomeViewModelFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
-import androidx.activity.viewModels
-import com.peachspot.legendkofarm.dialogs.ShowForegroundNotificationDialog
-import com.peachspot.legendkofarm.dialogs.ShowServiceStoppedDialogComposable
-import com.peachspot.legendkofarm.dialogs.ShowUpdateDialogComposable
-import com.peachspot.legendkofarm.ui.auth.AuthViewModel
+import androidx.activity.enableEdgeToEdge
+import com.kakao.sdk.common.KakaoSdk
 import com.peachspot.legendkofarm.util.Logger
-import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.HiltAndroidApp
 
-@AndroidEntryPoint
+///@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
     private var backPressedTime: Long = 0
     private val exitToastDuration: Int = 2000 // 2초 (밀리초 단위)
     private val TAG = "legendkofarm"
+    // Composable에서 다이얼로그 표시 여부를 제어하기 위한 상태
     private var showUpdateDialogState by mutableStateOf(false)
     private var updateInfoState by mutableStateOf<UpdateInfo?>(null)
-    private var showServiceStoppedDialogState by mutableStateOf(false)
+    private var showServiceStoppedDialogState by mutableStateOf(false) // 서비스 중지 다이얼로그 상태
     private var showForegroundNotificationDialogState by mutableStateOf(false)
     private var foregroundNotificationDataState by mutableStateOf<Map<String, String>?>(null)
+    private var filePathCallback: ValueCallback<Array<Uri>>? = null
+    private var imageUri: Uri? = null
+    private val FILE_REQUEST_CODE = 1001
+    private lateinit var fileChooserLauncher: ActivityResultLauncher<Intent>
 
-
-    private val urlViewModel: UrlViewModel by viewModels()
-
-
-
-//
-//    var filePathCallback: ValueCallback<Array<Uri>>? = null
-//    var imageUri: Uri? = null
-
+    // 앱 생명주기 상태 추적
+    private var isAppInBackground = false
+    private var wasInBackground = false
 
     data class UpdateInfo(
         val isForceUpdate: Boolean,
@@ -107,22 +100,12 @@ class MainActivity : ComponentActivity() {
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
             if (isGranted) {
                 Logger.d(TAG, "POST_NOTIFICATIONS permission granted.")
+                // 권한이 허용된 경우 처리 (예: FCM 토큰 가져오기 등)
             } else {
                 Logger.d(TAG, "POST_NOTIFICATIONS permission denied.")
                 Toast.makeText(this, "알림 권한이 거부되었습니다. 일부 기능이 제한될 수 있습니다.", Toast.LENGTH_LONG).show()
             }
         }
-
-
-    private val broadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            val status = intent?.getStringExtra("status")
-            val urlId = intent?.getLongExtra("urlId", -1) ?: -1
-            if (status == "error" && urlId != -1L) {
-                urlViewModel.loadUrlsFromRemote()
-            }
-        }
-    }
 
     private val foregroundMessageReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -140,8 +123,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         handleIntent(intent)
         FirebaseApp.initializeApp(this)
@@ -149,98 +132,197 @@ class MainActivity : ComponentActivity() {
             PlayIntegrityAppCheckProviderFactory.getInstance()
         )
         setupRemoteConfig()
-
         KakaoSdk.init(this, getString(R.string.kakao_app_key))
 
+        fileChooserLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val resultUri = result.data?.data ?: imageUri
+            if (result.resultCode == RESULT_OK && resultUri != null) {
+                filePathCallback?.onReceiveValue(arrayOf(resultUri))
+            } else {
+                filePathCallback?.onReceiveValue(null)
+            }
+            filePathCallback = null
+        }
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-
                 val now = System.currentTimeMillis()
                 if (now - backPressedTime < exitToastDuration) {
-                        finish()
+                    finish()
                 } else {
-                        Toast.makeText(
-                            this@MainActivity,
-                            "빠르게 한 번 더 누르면 종료됩니다.",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                    Toast.makeText(
+                        this@MainActivity,
+                        "빠르게 한 번 더 누르면 종료됩니다.",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     backPressedTime = now
                 }
             }
         })
 
-
         setContent {
-            legendkofarmTheme {
-                MainScreen() // ViewModel은 MainScreen 내부에서 생성
+            legendkofarmiTheme {
+                val navController = rememberNavController()
+                val context = LocalContext.current.applicationContext as Application
+                val database = remember { AppDatabase.getInstance(context) }
+                val userPrefs = remember { UserPreferencesRepository(context) }
+                val firebase = remember { FirebaseAuth.getInstance() }
+                val repository = remember { HomeRepositoryImpl(database.farmLogDao()) }
+
+                val viewModelFactory = remember {
+                    HomeViewModelFactory(
+                        context,
+                        userPrefs,
+                        firebase,
+                        myApiService,
+                        repository
+                    )
+                }
+                val homeViewModel: HomeViewModel = viewModel(factory = viewModelFactory)
+
+                // 백그라운드에서 돌아왔을 때 웹뷰 새로고침 트리거
+                LaunchedEffect(wasInBackground) {
+                    if (wasInBackground) {
+                        homeViewModel.refreshWebViewsAfterBackground()
+                        wasInBackground = false
+                    }
+                }
+
+                MainScreen(
+                    navController = navController,
+                    homeViewModel = homeViewModel,
+                    onFileChooserRequest = { callback, intent ->
+                        filePathCallback = callback
+                        imageUri = createImageUri()
+
+                        imageUri?.let { uri ->
+                            val chooserIntent = createCameraGalleryChooserIntent(this, uri)
+                            fileChooserLauncher.launch(chooserIntent)
+                        } ?: run {
+                            fileChooserLauncher.launch(intent)
+                        }
+                    }
+                )
 
                 LaunchedEffect(Unit) {
                     if (!isNetworkAvailable()) {
-                        showServiceStoppedDialogState = true
+                        showServiceStoppedDialogState=true
                     } else {
                         checkAppVersion()
                         registerAppToken()
                     }
                 }
 
+                // 서비스 중지 다이얼로그
                 if (showServiceStoppedDialogState) {
-                    ShowServiceStoppedDialogComposable {
-                        finishAffinity()
-                    }
-                }
-
-                updateInfoState?.let { info ->
-                    ShowUpdateDialogComposable(
-                        showDialog = showUpdateDialogState,
-                        onDismissRequest = {
-                            if (!info.isForceUpdate) showUpdateDialogState = false
-                        },
-                        isForceUpdate = info.isForceUpdate,
-                        message = info.message,
-                        storeUrl = info.storeUrl,
-                        onUpdateClick = {
-                            try {
-                                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(info.storeUrl)))
-                            } catch (e: ActivityNotFoundException) {
-                                startActivity(
-                                    Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$packageName"))
-                                )
-                            }
-                            finishAffinity()
+                    ShowServiceStoppedDialogComposable(
+                        onConfirm = {
+                            finishAffinity() // 앱 완전 종료
                         }
                     )
                 }
 
-//                if (showForegroundNotificationDialogState) {
-//                    foregroundNotificationDataState?.let { data ->
-//                        ShowForegroundNotificationDialog(
-//                            title = data["title"] ?: "알림",
-//                            message = data["body"] ?: "새로운 메시지가 도착했습니다.",
-//                            link = data["link"],
-//                            onDismiss = { showForegroundNotificationDialogState = false },
-//                            onConfirm = {
-//                                showForegroundNotificationDialogState = false
-//                                data["link"]?.takeIf { it.isNotBlank() }?.let { url ->
-//                                    try {
-//                                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-//                                    } catch (e: ActivityNotFoundException) {
-//                                        Toast.makeText(this@MainActivity, "연결된 앱을 찾을 수 없습니다.", Toast.LENGTH_SHORT).show()
-//                                    }
-//                                }
-//                            }
-//                        )
-//                    }
-//                }
+                // 업데이트 다이얼로그 Composable 호출 (서비스 중지 다이얼로그가 아닐 때만)
+                if (!showServiceStoppedDialogState) {
+                    updateInfoState?.let { info ->
+                        ShowUpdateDialogComposable(
+                            showDialog = showUpdateDialogState,
+                            onDismissRequest = {
+                                if (!info.isForceUpdate) {
+                                    showUpdateDialogState = false
+                                }
+                            },
+                            isForceUpdate = info.isForceUpdate,
+                            message = info.message,
+                            storeUrl = info.storeUrl,
+                            onUpdateClick = {
+                                try {
+                                    startActivity(
+                                        Intent(
+                                            Intent.ACTION_VIEW,
+                                            Uri.parse(info.storeUrl)
+                                        )
+                                    )
+                                } catch (e: ActivityNotFoundException) {
+                                    startActivity(
+                                        Intent(
+                                            Intent.ACTION_VIEW,
+                                            Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
+                                        )
+                                    )
+                                }
+                                finishAffinity()
+                            }
+                        )
+                    }
+                }
 
-
+                // 포그라운드 알림 다이얼로그
+                if (showForegroundNotificationDialogState) {
+                    foregroundNotificationDataState?.let { data ->
+                        ShowForegroundNotificationDialog(
+                            title = data["title"] ?: "알림",
+                            message = data["body"] ?: "새로운 메시지가 도착했습니다.",
+                            link = data["link"],
+                            onDismiss = { showForegroundNotificationDialogState = false },
+                            onConfirm = {
+                                showForegroundNotificationDialogState = false
+                                data["link"]?.takeIf { it.isNotBlank() }?.let { url ->
+                                    try {
+                                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                                    } catch (e: ActivityNotFoundException) {
+                                        Log.e(TAG, "Failed to open link: $url", e)
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "연결된 앱을 찾을 수 없습니다.",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
             }
         }
 
         requestNotificationPermissionIfNeeded()
     }
 
-    // closeApp 함수는 사용되지 않으므로 제거하거나 필요한 경우 유지
+    override fun onStart() {
+        super.onStart()
+        Logger.d(TAG, "onStart called")
+
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+            foregroundMessageReceiver,
+            IntentFilter(MyFirebaseMessagingService.ACTION_FOREGROUND_MESSAGE)
+        )
+
+        // 백그라운드에서 돌아온 경우 플래그 설정
+        if (isAppInBackground) {
+            wasInBackground = true
+            isAppInBackground = false
+            Logger.d(TAG, "App returned from background")
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Logger.d(TAG, "onStop called")
+        isAppInBackground = true
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(foregroundMessageReceiver)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Logger.d(TAG, "onResume called")
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Logger.d(TAG, "onPause called")
+    }
+
     fun closeApp(activity: Activity) {
         activity.finishAffinity()
     }
@@ -269,23 +351,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-//        LocalBroadcastManager.getInstance(this).registerReceiver(
-//            foregroundMessageReceiver,
-//            IntentFilter(MyFirebaseMessagingService.ACTION_FOREGROUND_MESSAGE)
-//        )
-    }
-
-    override fun onStop() {
-        super.onStop()
-     //   LocalBroadcastManager.getInstance(this).unregisterReceiver(foregroundMessageReceiver)
-    }
-
-
-
-
-    // requestLocationPermissionIfNeeded 함수는 사용되지 않으므로 제거하거나 필요한 경우 유지
     private fun requestLocationPermissionIfNeeded() {
         if (ContextCompat.checkSelfPermission(
                 this,
@@ -338,7 +403,7 @@ class MainActivity : ComponentActivity() {
 
     private fun setupRemoteConfig() {
         val remoteConfig = Firebase.remoteConfig
-        val configSettings = com.google.firebase.remoteconfig.remoteConfigSettings {
+        val configSettings = remoteConfigSettings {
             minimumFetchIntervalInSeconds =
                 if (com.peachspot.legendkofarm.BuildConfig.DEBUG) {
                     0
@@ -352,13 +417,13 @@ class MainActivity : ComponentActivity() {
                 if (task.isSuccessful) {
                     Logger.d(TAG, "Remote Config defaults loaded.")
                 } else {
-                    Logger.e(TAG, "Failed to load Remote Config defaults.", task.exception)
+                    Log.e(TAG, "Failed to load Remote Config defaults.", task.exception)
                 }
             }
     }
 
     private fun registerAppToken() {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: "no_user"
 
         FirebaseMessaging.getInstance().getToken()
             .addOnCompleteListener { task ->
@@ -366,7 +431,7 @@ class MainActivity : ComponentActivity() {
                     val token = task.result
                     send_token_with_uid(token, uid)
                 } else {
-                    Logger.e("MainActivity", "FCM 토큰 가져오기 실패", task.exception)
+                    Log.e("MainActivity", "FCM 토큰 가져오기 실패", task.exception)
                 }
             }
     }
@@ -376,10 +441,10 @@ class MainActivity : ComponentActivity() {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // val data = mapOf("token" to token, "uid" to uid) // 사용되지 않음
-                val response = myApiService.registerUser( uid, token)
+                val data = mapOf("token" to token, "uid" to uid)
+                val response = myApiService.registerUser(uid,token)
             } catch (e: Exception) {
-                Logger.e("Main", "Exception while sending token to server.", e)
+                Log.e("Main", "Exception while sending token to server.", e)
             }
         }
     }
@@ -391,7 +456,7 @@ class MainActivity : ComponentActivity() {
                 if (task.isSuccessful) {
                     val updated = task.result
                     val getServiceRunning = remoteConfig.getBoolean("running")
-                    if (!getServiceRunning) {
+                    if (getServiceRunning == false) {
                         showServiceStoppedDialogState = true
                     } else {
                         val latestVersionCode = remoteConfig.getLong("latest_version_code")
@@ -415,12 +480,95 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 } else {
-                    Logger.e(TAG, "Failed to fetch remote config.", task.exception)
+                    Log.e(TAG, "Failed to fetch remote config.", task.exception)
                 }
             }
     }
 
+    @Composable
+    private fun ShowUpdateDialogComposable(
+        showDialog: Boolean,
+        onDismissRequest: () -> Unit,
+        isForceUpdate: Boolean,
+        message: String,
+        storeUrl: String,
+        onUpdateClick: () -> Unit
+    ) {
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    if (!isForceUpdate) {
+                        onDismissRequest()
+                    }
+                },
+                title = {
+                    Text(text = getString(R.string.update_available_title))
+                },
+                text = {
+                    Text(text = message.ifEmpty { getString(R.string.default_update_message) })
+                },
+                confirmButton = {
+                    TextButton(onClick = onUpdateClick) {
+                        Text(getString(R.string.update_button))
+                    }
+                },
+                dismissButton = {
+                    if (!isForceUpdate) {
+                        TextButton(onClick = onDismissRequest) {
+                            Text(getString(R.string.later_button))
+                        }
+                    }
+                }
+            )
+        }
+    }
 
+    @Composable
+    private fun ShowServiceStoppedDialogComposable(
+        onConfirm: () -> Unit
+    ) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = {
+                Text(text = stringResource(R.string.exitDialogTitle))
+            },
+            text = {
+                Text(text = stringResource(R.string.exitDialogMent))
+            },
+            confirmButton = {
+                TextButton(onClick = onConfirm) {
+                    Text("확인")
+                }
+            }
+        )
+    }
+
+    @Composable
+    private fun ShowForegroundNotificationDialog(
+        title: String,
+        message: String,
+        link: String?,
+        onDismiss: () -> Unit,
+        onConfirm: () -> Unit
+    ) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(text = title) },
+            text = { Text(text = message) },
+            confirmButton = {
+                TextButton(onClick = onConfirm) {
+                    Text(if (link.isNullOrBlank()) "확인" else "이동")
+                }
+            },
+            dismissButton = {
+                if (link.isNullOrBlank()) {
+                    TextButton(onClick = onDismiss) {
+                        Text("닫기")
+                    }
+                }
+            }
+        )
+    }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -437,7 +585,27 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun createImageUri(): Uri {
+        val imageFile = File(cacheDir, "IMG_${System.currentTimeMillis()}.png")
+        return FileProvider.getUriForFile(
+            this,
+            "$packageName.fileprovider",
+            imageFile
+        )
+    }
 
+    fun createCameraGalleryChooserIntent(context: Context, outputUri: Uri): Intent {
+        val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+            putExtra(MediaStore.EXTRA_OUTPUT, outputUri)
+        }
 
+        val galleryIntent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            type = "image/*"
+        }
 
+        return Intent(Intent.ACTION_CHOOSER).apply {
+            putExtra(Intent.EXTRA_INTENT, galleryIntent)
+            putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(cameraIntent))
+        }
+    }
 }
