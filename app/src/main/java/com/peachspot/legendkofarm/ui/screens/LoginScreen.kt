@@ -12,6 +12,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 
@@ -122,59 +124,33 @@ fun LoginScreen(
                 modifier = Modifier.size(200.dp)
             )
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             Text("전설의 농부", style = MaterialTheme.typography.headlineSmall)
             Spacer(modifier = Modifier.height(10.dp))
             Text("서비스를 이용하려면 로그인해주세요.", style = MaterialTheme.typography.bodySmall)
             Spacer(modifier = Modifier.height(30.dp))
 
-
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Button(
-                    onClick = {
-                        (context as? Activity)?.let { activity ->
-                            viewModel.startKakaoSignIn(activity)
-                        } ?: run {
-                            Logger.e("LoginScreen", "Context is not an Activity, cannot start Kakao Sign-In.")
-                        }
-                    },
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFE500), // 카카오 노란색
-                        contentColor = Color.Black
-                    ),
-                    modifier = Modifier
-                        .size(width = 200.dp, height = 45.dp)
-                        .border(
-                            width = 1.dp,
-                            color = Color(0xFF565656),
-                            shape = RoundedCornerShape(20.dp)
-                        )
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+            Image(
+                painter = painterResource(id = R.drawable.login_kakao),
+                contentDescription = "Google Sign-In",
+                modifier = Modifier
+                    .clickable(
+                        // 리플 효과 제거
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.chat), // chat.png
-                            contentDescription = "Kakao Icon",
-                            modifier = Modifier.size(38.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "카카오톡 로그인",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        (context as? Activity)?.let {
+                                activity ->viewModel.startKakaoSignIn(activity)
+                        } ?: run {
+                            Logger.e("LoginScreen", "Context is not an Activity, cannot start kakao.")
+                        }
                     }
-                }
-
-
-                Spacer(modifier = Modifier.height(26.dp))
-
+                    .padding(1.dp)
+                    .size(width = 150.dp, height = 30.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
                 Image(
-                    painter = painterResource(id = R.drawable.android_light_rd_si),
+                    painter = painterResource(id = R.drawable.login_google),
                     contentDescription = "Google Sign-In",
                     modifier = Modifier
                         .clickable(
@@ -189,20 +165,34 @@ fun LoginScreen(
                             }
                         }
                         .padding(1.dp)
-                        .size(width = 220.dp, height = 45.dp)
+                        .size(width = 120.dp, height = 30.dp)
                 )
+                Spacer(modifier = Modifier.height(30.dp))
 
-
-                Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = {
+                    scope.launch {
+                        val url = "https://peachspot.co.kr/blog/detail?no=2"
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        context.startActivity(intent)
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFefefef),
+                    contentColor = Color.Black
+                ),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                Text("서비스 소개",
+                    fontSize = 12.sp
+                )
             }
+            Spacer(modifier = Modifier.height(10.dp))
 
-
-            Spacer(modifier = Modifier.height(50.dp))
             // 개인정보취급방침
             Button(
                 onClick = {
                     scope.launch {
-
                         val url = "https://peachspot.co.kr/privacy?no=2"
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                         context.startActivity(intent)
@@ -211,9 +201,11 @@ fun LoginScreen(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFefefef),
                     contentColor = Color.Black
-                )
+                ),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
             ) {
-                Text("개인정보취급방침")
+                Text("개인정보취급방침",
+                    fontSize = 12.sp)
             }
 
 

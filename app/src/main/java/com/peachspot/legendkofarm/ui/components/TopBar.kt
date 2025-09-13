@@ -101,6 +101,6 @@ fun MyAppTopBar(
                 )
             }
         },
-        modifier = modifier.height(70.dp)
+        modifier = modifier.height(80.dp)
     )
 }
