@@ -39,12 +39,16 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 
-
-// MyAppTopBar는 주로 뒤로가기 버튼 등이 있는 일반적인 상단 바에 사용될 수 있습니다.
-// 현재 코드에서는 MyScreenWithSidebar에서 직접 사용되지 않으므로, 필요에 따라 수정하거나 유지합니다.
+import androidx.compose.foundation.layout.Arrangement // 추가
+import androidx.compose.foundation.layout.fillMaxWidth // 추가
+import androidx.compose.foundation.layout.width // 추가
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.intl.Locale
 import java.time.LocalDate
-import java.time.format.TextStyle
-import java.util.Locale
+
+// ... 다른 import 문들
+
+// ...
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,24 +56,34 @@ fun MyAppTopBar(
     title: String = "",
     onNotificationClick: () -> Unit = {},
     onTitleClick: () -> Unit,
+    onZoomInClick: () -> Unit,    // 확대 버튼 콜백 추가
+    onZoomOutClick: () -> Unit,   // 축소 버튼 콜백 추가
     onMenuClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val view = LocalView.current
 
-    // 오늘 날짜 가져오기
-    val today = LocalDate.now()
-    val month = today.monthValue
-    val day = today.dayOfMonth
-    val dayOfWeek = today.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.KOREAN) // "일요일"
-
-
     TopAppBar(
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onTitleClick) {
+            Row(
+                modifier = Modifier.fillMaxWidth(), // 사용 가능한 전체 너비를 채우도록 설정
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center // 가로 방향으로 가운데 정렬
+            ) {
+                TextButton(onClick = onZoomInClick) {
                     Text(
-                        text = month.toString() + "월 " + day.toString() + "일 " + dayOfWeek,
+                        text = "화면 확대",
+                        color = Color.White
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(2.dp)) // 버튼 사이 간격 추가 (원하는 크기로 조절)
+                Text("/")
+                Spacer(modifier = Modifier.width(2.dp)) // 버튼 사이 간격 추가 (원하는 크기로 조절)
+
+                TextButton(onClick = onZoomOutClick) {
+                    Text(
+                        text = "축소",
                         color = Color.White
                     )
                 }
@@ -81,18 +95,21 @@ fun MyAppTopBar(
         ),
         navigationIcon = {
             if (onMenuClick != null) {
+                // IconButton의 기본 패딩을 줄이려면 contentPadding을 조절할 수 있습니다.
+                // 또는 Modifier.size를 사용하여 아이콘 버튼 자체의 크기를 조절할 수도 있습니다.
                 IconButton(onClick = onMenuClick) {
                     Icon(Icons.Default.Menu, contentDescription = "메뉴", tint = Color.White)
                 }
             }
         },
         actions = {
+            // IconButton의 기본 패딩을 줄이려면 contentPadding을 조절할 수 있습니다.
             IconButton(
                 onClick = {
                     view.playSoundEffect(SoundEffectConstants.CLICK)
                     onNotificationClick()
                 },
-                modifier = Modifier.fillMaxHeight()
+                modifier = Modifier.fillMaxHeight() // fillMaxHeight()는 유지하거나 필요에 따라 조절
             ) {
                 Icon(
                     imageVector = Icons.Default.Notifications,
@@ -104,3 +121,4 @@ fun MyAppTopBar(
         modifier = modifier.height(80.dp)
     )
 }
+
