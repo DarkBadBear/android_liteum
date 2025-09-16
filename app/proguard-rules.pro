@@ -54,8 +54,8 @@
 -dontwarn com.google.android.gms.**
 
 # 데이터 클래스 관련 (프로젝트별로 조정 필요)
--keep class com.peachspot.legendkofarm.data.** { *; }
--keep class com.peachspot.legendkofarm.model.** { *; }
+-keep class com.peachspot.liteum.data.** { *; }
+-keep class com.peachspot.liteum.model.** { *; }
 
 # Coroutines 관련
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
@@ -99,15 +99,15 @@
 
 
 # 기존 규칙에 추가
--keep interface com.peachspot.legendkofarm.data.remote.api.MyApiService { *; }
--keep class com.peachspot.legendkofarm.data.remote.api.MyApiService { *; }
+-keep interface com.peachspot.liteum.data.remote.api.MyApiService { *; }
+-keep class com.peachspot.liteum.data.remote.api.MyApiService { *; }
 
 # Response 타입도 명시적으로 보존
 -keep class retrofit2.Response { *; }
 -keep class **.BuildConfig { *; }
 -keep class com.google.firebase.remoteconfig.** { *; }
 
-    -keep interface com.peachspot.legendkofarm.with.retrofit.interfaces.** { *; }
+    -keep interface com.peachspot.liteum.with.retrofit.interfaces.** { *; }
 
     -keepattributes Signature
     -keepattributes Exceptions

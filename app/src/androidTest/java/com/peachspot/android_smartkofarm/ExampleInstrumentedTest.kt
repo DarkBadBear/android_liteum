@@ -1,4 +1,4 @@
-package com.peachspot.android_legendkofarm
+package com.peachspot.android_liteum
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.peachspot.android_legendkofarm", appContext.packageName)
+        assertEquals("com.peachspot.android_liteum", appContext.packageName)
     }
 }

@@ -1,4 +1,4 @@
-package com.peachspot.android_legendkofarm
+package com.peachspot.android_liteum
 
 import org.junit.Test
 

@@ -23,11 +23,11 @@ if (localPropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.peachspot.legendkofarm"
+    namespace = "com.peachspot.liteum"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.peachspot.legendkofarm"
+        applicationId = "com.peachspot.liteum"
         minSdk = 32
         targetSdk = 35
         versionCode = 24

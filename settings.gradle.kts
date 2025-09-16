@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "android_legendkofarm"
+rootProject.name = "android_liteum"
 include(":app")

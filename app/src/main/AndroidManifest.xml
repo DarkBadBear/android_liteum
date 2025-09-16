@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.peachspot.legendkofarm">
+    package="com.peachspot.liteum">
 
     <uses-sdk tools:overrideLibrary="com.google.firebase.messaging" />
 
@@ -18,8 +18,8 @@
 
 
     <application
-        android:name=".legendkofarm"
-        android:theme="@style/Theme.Android_legendkofarm"
+        android:name=".liteum"
+        android:theme="@style/Theme.Android_liteum"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:forceDarkAllowed="true"
@@ -36,13 +36,13 @@
         android:value="@string/default_notification_channel_id" />
     <meta-data
         android:name="com.google.firebase.messaging.default_notification_icon"
-        android:resource="@drawable/legendkofarm" />
+        android:resource="@drawable/liteum" />
     <meta-data
         android:name="com.google.firebase.messaging.default_notification_color"
         android:resource="@color/colorAccent" />
     <!-- MainActivity 선언도 여기에 한 번만 있어야 합니다. -->
     <activity
-        android:name="com.peachspot.legendkofarm.MainActivity"
+        android:name="com.peachspot.liteum.MainActivity"
         android:exported="true"
         android:launchMode="singleTop"
         android:configChanges="screenSize|orientation">
