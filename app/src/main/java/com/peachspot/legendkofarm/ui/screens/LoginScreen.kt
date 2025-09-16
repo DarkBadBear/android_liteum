@@ -119,7 +119,7 @@ fun LoginScreen(
         ) {
             // 앱 로고
             Image(
-                painter = painterResource(id = R.drawable.legendkofarm),
+                painter = painterResource(id = R.drawable.round_legendkofarm),
                 contentDescription = "App Logo",
                 modifier = Modifier.size(200.dp)
             )
@@ -131,8 +131,8 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(30.dp))
 
             Image(
-                painter = painterResource(id = R.drawable.login_kakao),
-                contentDescription = "Google Sign-In",
+                painter = painterResource(id = R.drawable.btn_login_kakao),
+                contentDescription = "kakao login",
                 modifier = Modifier
                     .clickable(
                         // 리플 효과 제거
@@ -146,11 +146,11 @@ fun LoginScreen(
                         }
                     }
                     .padding(1.dp)
-                    .size(width = 150.dp, height = 30.dp)
+                    .size(width = 224.dp, height = 50.dp)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Image(
-                    painter = painterResource(id = R.drawable.login_google),
+                    painter = painterResource(id = R.drawable.btn_login_google),
                     contentDescription = "Google Sign-In",
                     modifier = Modifier
                         .clickable(
@@ -165,7 +165,7 @@ fun LoginScreen(
                             }
                         }
                         .padding(1.dp)
-                        .size(width = 120.dp, height = 30.dp)
+                        .size(width = 224.dp, height =50.dp)
                 )
                 Spacer(modifier = Modifier.height(30.dp))
 

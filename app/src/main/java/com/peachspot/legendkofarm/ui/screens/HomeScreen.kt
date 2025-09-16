@@ -170,7 +170,7 @@ fun HomeScreen(
 
             Spacer(Modifier.height(10.dp))
             Image(
-                painter = painterResource(id = R.drawable.legendkofarm),
+                painter = painterResource(id = R.drawable.round_legendkofarm),
                 contentDescription = "App Logo",
                 modifier = Modifier.size(200.dp)
             )
@@ -187,7 +187,8 @@ fun HomeScreen(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFefefef),
                     contentColor = Color.Black
-                )
+                ),
+                modifier = Modifier.width(200.dp) // 원하는 너비로 설정
             ) { Text("웹사이트") }
 
             Spacer(Modifier.height(24.dp))
@@ -202,7 +203,8 @@ fun HomeScreen(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFefefef),
                     contentColor = Color.Black
-                )
+                ),
+                modifier = Modifier.width(200.dp) // 원하는 너비로 설정
             ) { Text("개인정보취급방침") }
 
             Spacer(Modifier.height(24.dp))
@@ -216,7 +218,8 @@ fun HomeScreen(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFefefef),
                     contentColor = Color.Black
-                )
+                ),
+                modifier = Modifier.width(200.dp) // 원하는 너비로 설정
             ) { Text("로그아웃") }
 
             Spacer(Modifier.height(24.dp))
@@ -227,7 +230,8 @@ fun HomeScreen(
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFFefefef),
                             contentColor = Color.Black
-                        )
+                        ),
+                        modifier = Modifier.width(200.dp) // 원하는 너비로 설정
                     ) { Text("계정 관리") }
 
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -239,6 +243,16 @@ fun HomeScreen(
                 }
             }
 
+
+            // 이 부분을 추가합니다.
+            Spacer(Modifier.weight(1f)) // 사용 가능한 모든 공간을 차지하도록 합니다.
+            Text(
+                text = "Powered by Peachspot",
+                style = MaterialTheme.typography.bodySmall, // 또는 원하는 스타일
+                color = Color.Gray, // 또는 원하는 색상
+                modifier = Modifier.padding(bottom = 16.dp) // 하단 여백 추가 (선택 사항)
+            )
+            // 여기까지 추가합니다.
 
         }
     }
