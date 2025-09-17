@@ -49,7 +49,7 @@ data class UserProfileData(
 // val floorCount: Int
 // )
 
-class UserPreferencesRepository(private val context: Context) {
+open class UserPreferencesRepository(private val context: Context) {
 
     private fun Flow<Preferences>.catchIOExceptionAndEmitEmptyPreferences(): Flow<Preferences> =
         catch { exception ->

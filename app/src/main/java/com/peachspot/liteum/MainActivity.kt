@@ -164,7 +164,7 @@ class MainActivity : ComponentActivity() {
                 val database = remember { AppDatabase.getInstance(context) }
                 val userPrefs = remember { UserPreferencesRepository(context) }
                 val firebase = remember { FirebaseAuth.getInstance() }
-                val repository = remember { HomeRepositoryImpl(database.farmLogDao()) }
+                val repository = remember { HomeRepositoryImpl(database.bookLogsDao()) }
 
                 val viewModelFactory = remember {
                     HomeViewModelFactory(
@@ -180,7 +180,7 @@ class MainActivity : ComponentActivity() {
                 // 백그라운드에서 돌아왔을 때 웹뷰 새로고침 트리거
                 LaunchedEffect(wasInBackground) {
                     if (wasInBackground) {
-                        homeViewModel.refreshWebViewsAfterBackground()
+                        //homeViewModel.refreshWebViewsAfterBackground()
                         wasInBackground = false
                     }
                 }

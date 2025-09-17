@@ -37,10 +37,16 @@ fun MainScreen(
                 if (!authUiState.isLoading) {
                     delay(200L)
                     if (authUiState.isUserLoggedIn) {
-                        navController.navigate("home") {0
+
+                        navController.navigate("review") {0
                             popUpTo("loading") { inclusive = true }
-                     //       launchSingleTop = true
                         }
+
+
+//                        navController.navigate("home") {0
+//                            popUpTo("loading") { inclusive = true }
+//                        }
+
                     } else {
                         navController.navigate("login") {
                             popUpTo("loading") { inclusive = true }
@@ -68,20 +74,15 @@ fun MainScreen(
             HomeScreen(
                 navController = navController,
                 viewModel = homeViewModel,
-                onFileChooserRequest = onFileChooserRequest
             )
-
-            // 홈 화면에서 로그아웃 시 즉시 로그인 화면으로 이동
-            /*LaunchedEffect(authUiState.isUserLoggedIn) {
-                if (!authUiState.isUserLoggedIn) {
-                    navController.navigate("login") {
-                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                }
-            }*/
-
         }
+        composable("review") {
+            ReviewScreen(
+                navController = navController,
+                viewModel = homeViewModel,
+            )
+        }
+
 
         composable("byebye") {
             ByeScreen()

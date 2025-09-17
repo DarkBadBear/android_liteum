@@ -114,14 +114,22 @@ fun LoginScreen(
             Image(
                 painter = painterResource(id = R.drawable.round_liteum),
                 contentDescription = "App Logo",
-                modifier = Modifier.size(200.dp)
+                modifier = Modifier.size(100.dp)
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
-            Text("전설의 농부", style = MaterialTheme.typography.headlineSmall)
             Spacer(modifier = Modifier.height(10.dp))
-            Text("서비스를 이용하려면 로그인해주세요.", style = MaterialTheme.typography.bodySmall)
+            Text("LitEum", style = MaterialTheme.typography.headlineSmall)
+
+            Spacer(modifier = Modifier.height(5.dp))
+            Text("독서후기와 공감", style = MaterialTheme.typography.bodySmall)
             Spacer(modifier = Modifier.height(30.dp))
+            Text(
+                text = "서비스를 이용하려면 로그인해주세요.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFFFFD700) // 금색
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             Image(
                 painter = painterResource(id = R.drawable.btn_login_kakao),
@@ -139,7 +147,7 @@ fun LoginScreen(
                         }
                     }
                     .padding(1.dp)
-                    .size(width = 224.dp, height = 50.dp)
+                    .size(width = 134.dp, height = 30.dp)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Image(
@@ -158,7 +166,7 @@ fun LoginScreen(
                             }
                         }
                         .padding(1.dp)
-                        .size(width = 224.dp, height =50.dp)
+                        .size(width = 134.dp, height =30.dp)
                 )
                 Spacer(modifier = Modifier.height(30.dp))
 

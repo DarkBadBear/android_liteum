@@ -13,16 +13,18 @@ import androidx.room.TypeConverters
 @TypeConverters(Converters::class) // TypeConverter 등록
 @Database(
     entities = [
-        FarmLogs::class,
+        ReviewLogs::class,
+        BookLogs::class,
         NotificationEntity::class
     ],
-    version = 5, // 실제 데이터베이스 버전에 맞게 수정
+    version = 1, // 실제 데이터베이스 버전에 맞게 수정
     exportSchema = false
 )
 // AppDatabase 클래스를 public으로 변경합니다. (Kotlin에서 abstract 클래스는 기본적으로 open 입니다)
 public abstract class AppDatabase : RoomDatabase() {
 
-    abstract fun farmLogDao(): FarmLogDao
+    abstract fun reviewLogsDao(): ReviewLogsDao
+    abstract fun bookLogsDao(): BookLogsDao
     abstract fun notificationDao(): NotificationDao // <<< 알림 DAO 추가
 
     companion object {

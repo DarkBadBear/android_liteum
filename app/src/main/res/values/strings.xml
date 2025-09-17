@@ -2,7 +2,7 @@
     <string name="app_name">LitEum</string>
     <string name="tab_label_building">홈</string>
     <string name="default_notification_channel_id">liteum_ch_02</string>
-    <string name="default_notification_channel_name">전설의농부</string>
+    <string name="default_notification_channel_name">LitEum</string>
     <string name="default_notification_channel_description">알림</string>
     <string name="default_notification_message_body">메세지</string>
     <string name="screen_title_building">전설의 농부</string>
@@ -21,7 +21,7 @@
     <string name="tab_diary">일기</string>
     <string name="tab_exchange">시세</string>
     <string name="tab_news">정보</string>
-    <string name="default_web_client_id">562206454519-600acavebt0hhjkudijr3l4pd3pqcpgm.apps.googleusercontent.com</string>
+    <string name="default_web_client_id">892713756501-jfpsic058vogthc2j2j1fo27dd7js049.apps.googleusercontent.com</string>
     <string name="screen_title">마이페이지</string>
 
     <string name="privacy_policy_content">개인정보취급안내</string>
@@ -29,5 +29,14 @@
     <string name="profile_agree_to_privacy_policy">개인정보취급방침</string>
     <string name="tab_profile">프로필</string>
     <string name="url">https://peachspot.co.kr/lkf</string>
-    <string name="kakao_app_key">4a5201f3ac41719902c64a3ee0a29f2c</string>
+    <string name="kakao_app_key">be546b0510c56edc201ddad74a2e25b2</string>
+    <string name="screen_title_review_creation">리뷰하기</string>
+    <string name="button_save_review">저장</string>
+    <string name="cd_navigate_up">취소</string>
+    <string name="cd_selected_book_cover">선택된 책표지</string>
+    <string name="cd_clear_image">삭제</string>
+    <string name="label_add_book_cover">표지 추가</string>
+    <string name="label_tap_to_add_image">사진 추가</string>
+    <string name="button_confirm">확인</string>
+    <string name="button_cancel">취소</string>
 </resources>

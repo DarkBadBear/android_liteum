@@ -1,49 +1,33 @@
 {
   "project_info": {
-    "project_number": "562206454519",
+    "project_number": "892713756501",
     "project_id": "liteum",
     "storage_bucket": "liteum.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:562206454519:android:975b4144848745534859f2",
+        "mobilesdk_app_id": "1:892713756501:android:0c5c099eb6f8b01d8631dc",
         "android_client_info": {
           "package_name": "com.peachspot.liteum"
         }
       },
       "oauth_client": [
         {
-          "client_id": "562206454519-a9g8b1juuc618llkg61mqjg9ec23q4hv.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.peachspot.liteum",
-            "certificate_hash": "0c4f0f043156075e2e1936b8afd1ca546819116a"
-          }
-        },
-        {
-          "client_id": "562206454519-s7ujuii958skj0vq15jr56pl2d663k36.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.peachspot.liteum",
-            "certificate_hash": "7f1096020c8b35cc36842a6ba46278fcbb86a83d"
-          }
-        },
-        {
-          "client_id": "562206454519-600acavebt0hhjkudijr3l4pd3pqcpgm.apps.googleusercontent.com",
+          "client_id": "892713756501-jfpsic058vogthc2j2j1fo27dd7js049.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBJRMw7yERC1HMOgHnzqUVTaUeZjb8PFMI"
+          "current_key": "AIzaSyD_0_LRigWYRwXcANcKf3F4KDGmjzW6RMg"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "562206454519-600acavebt0hhjkudijr3l4pd3pqcpgm.apps.googleusercontent.com",
+              "client_id": "892713756501-jfpsic058vogthc2j2j1fo27dd7js049.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

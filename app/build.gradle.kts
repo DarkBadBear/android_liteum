@@ -86,9 +86,8 @@ android {
         compose = true
     }
 }
-
 dependencies {
-
+    implementation(libs.androidx.paging.runtime.ktx)
     implementation(libs.google.tink)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kakao.all)
@@ -96,10 +95,8 @@ dependencies {
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.security.crypto.ktx)
 
-
     implementation(platform(libs.firebase.bom))
-    implementation(libs.androidx.swipeRefreshLayout) // Use the alias you defined in libs.versions.toml
-
+    implementation(libs.androidx.swipeRefreshLayout)
 
     implementation(libs.firebase.appcheck)
     implementation(libs.firebase.auth)
@@ -117,6 +114,8 @@ dependencies {
     implementation(libs.androidx.material3)
 
     implementation(libs.hilt.android)
+    implementation(libs.generativeai)
+    implementation(libs.androidx.datastore.core)
     kapt(libs.hilt.compiler)
     implementation(libs.javax.inject)
 
@@ -144,9 +143,10 @@ dependencies {
     implementation(libs.accompanist.permissions)
 
     implementation(libs.kotlinx.coroutines.play.services)
-    implementation(libs.kotlinxCoroutinesCore) // kotlinx-coroutines-core의 alias로 가정
+    implementation(libs.kotlinxCoroutinesCore)
 
-    implementation(libs.androidx.material.icons)
+    // Material2 아이콘 제거됨
+    // implementation(libs.androidx.material.icons)
 
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.converter.gson)
@@ -154,7 +154,9 @@ dependencies {
     implementation(libs.room)
     implementation(libs.roomKtx)
     kapt(libs.roomCompiler)
+    implementation(libs.androidx.room.paging)
 
+    implementation(libs.androidx.paging.runtime.ktx)
     implementation(libs.gson)
 
     implementation(libs.coil.compose)
@@ -162,9 +164,8 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom)) // 중복될 수 있으나, compose test bom이 별도로 있다면 유지
+    androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
