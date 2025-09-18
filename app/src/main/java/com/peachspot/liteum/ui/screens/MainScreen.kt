@@ -12,6 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
+import com.peachspot.liteum.viewmodel.FeedViewModel
 
 import com.peachspot.liteum.viewmodel.HomeViewModel
 import kotlinx.coroutines.delay
@@ -20,6 +21,7 @@ import kotlinx.coroutines.delay
 fun MainScreen(
     navController: NavHostController,
     homeViewModel: HomeViewModel,
+    feedViewModel: FeedViewModel,
     onFileChooserRequest: (ValueCallback<Array<Uri>>, Intent) -> Unit,
 
 ) {
@@ -72,6 +74,7 @@ fun MainScreen(
             HomeScreen(
                 navController = navController,
                 viewModel = homeViewModel,
+                feedViewModel =  feedViewModel,
             )
         }
         composable("review") {

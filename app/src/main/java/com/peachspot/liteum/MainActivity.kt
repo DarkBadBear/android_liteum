@@ -50,7 +50,6 @@ import com.google.firebase.remoteconfig.remoteConfig
 import com.google.firebase.remoteconfig.remoteConfigSettings
 import com.peachspot.liteum.data.db.AppDatabase
 import com.peachspot.liteum.data.remote.client.NetworkClient.myApiService
-import com.peachspot.liteum.data.repositiory.HomeRepositoryImpl
 import com.peachspot.liteum.data.repositiory.UserPreferencesRepository
 import com.peachspot.liteum.services.MyFirebaseMessagingService
 import com.peachspot.liteum.ui.screens.MainScreen
@@ -64,7 +63,10 @@ import kotlinx.coroutines.launch
 import java.io.File
 import androidx.activity.enableEdgeToEdge
 import com.kakao.sdk.common.KakaoSdk
+import com.peachspot.liteum.data.repositiory.BookRepositoryImpl
 import com.peachspot.liteum.util.Logger
+import com.peachspot.liteum.viewmodel.FeedViewModel
+import com.peachspot.liteum.viewmodel.FeedViewModelFactory
 
 ///@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -163,20 +165,36 @@ class MainActivity : ComponentActivity() {
                 val context = LocalContext.current.applicationContext as Application
                 val database = remember { AppDatabase.getInstance(context) }
                 val userPrefs = remember { UserPreferencesRepository(context) }
-                val firebase = remember { FirebaseAuth.getInstance() }
-                val repository = remember { HomeRepositoryImpl(database.bookLogsDao()) }
+                // firebase 변수 이름을 firebaseAuth로 변경하여 명확성 향상 (HomeViewModelFactory와 일치)
+                val firebaseAuth = remember { FirebaseAuth.getInstance() }
+                val bookLogsDao = remember { database.bookLogsDao() } // BookLogsDao 인스턴스
+                val reviewLogsDao = remember { database.reviewLogsDao() } // ReviewLogsDao 인스턴스 생성
 
-                val viewModelFactory = remember {
+                // HomeRepositoryImpl은 HomeViewModel에서 사용.
+                // FeedViewModel은 Dao를 직접 사용하거나 자체 Repository를 가질 수 있음.
+                // 여기서는 HomeViewModel용으로만 HomeRepositoryImpl을 생성.
+                val bookRepository = remember { BookRepositoryImpl(bookLogsDao, reviewLogsDao) }
+
+
+
+                // HomeViewModel 생성
+                val homeViewModelFactory = remember {
                     HomeViewModelFactory(
                         context,
                         userPrefs,
-                        firebase,
+                        firebaseAuth, // 수정된 이름 사용
                         myApiService,
-                        repository
-
+                        bookRepository
                     )
                 }
-                val homeViewModel: HomeViewModel = viewModel(factory = viewModelFactory)
+                val homeViewModel: HomeViewModel = viewModel(factory = homeViewModelFactory)
+
+                // FeedViewModel 생성
+                val feedViewModelFactory = remember {
+                    // FeedViewModelFactory는 BookLogsDao만 필요로 한다고 가정
+                    FeedViewModelFactory(bookLogsDao)
+                }
+                val feedViewModel: FeedViewModel = viewModel(factory = feedViewModelFactory)
 
 //                // 백그라운드에서 돌아왔을 때 웹뷰 새로고침 트리거
 //                LaunchedEffect(wasInBackground) {
@@ -186,9 +204,11 @@ class MainActivity : ComponentActivity() {
 //                    }
 //                }
 
+
                 MainScreen(
                     navController = navController,
                     homeViewModel = homeViewModel,
+                    feedViewModel = feedViewModel,
                     onFileChooserRequest = { callback, intent ->
                         filePathCallback = callback
                         imageUri = createImageUri()
@@ -201,7 +221,6 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 )
-
                 LaunchedEffect(Unit) {
                     if (!isNetworkAvailable()) {
                         showServiceStoppedDialogState=true

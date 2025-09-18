@@ -6,14 +6,11 @@ import androidx.room.PrimaryKey
 import androidx.room.TypeConverters // 필요한 경우 TypeConverter 유지 또는 추가
 // import com.peachspot.liteum.util.TimestampListConverter // List<Long> 등이 없다면 제거 가능
 
-@Entity(tableName = "book_reviews") // 테이블 이름도 "book_reviews" 등으로 변경하는 것이 좋습니다.
+@Entity(tableName = "books") // 테이블 이름도 "book_reviews" 등으로 변경하는 것이 좋습니다.
 // @TypeConverters(...) // List<String> 같은 복잡한 타입을 사용한다면 TypeConverter 필요
 data class BookLogs( // 클래스 이름을 BookReview 등으로 변경하는 것을 고려해보세요.
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0L,
-
-    @ColumnInfo(name = "server_id", defaultValue = "0") // 서버의 책장 ID, 기본값 0
-    val serverId: Long = 0L,
 
     // 필수 입력
     @ColumnInfo(name = "book_title")
@@ -49,8 +46,6 @@ data class BookLogs( // 클래스 이름을 BookReview 등으로 변경하는 �
     @ColumnInfo(name = "rating")
     val rating: Float?,            // 별점 (0.0 ~ 5.0)
 
-    @ColumnInfo(name = "review_text")
-    val reviewText: String?,       // 한줄평 또는 상세 리뷰 내용
 
     @ColumnInfo(name = "page_count")
     val pageCount: Int?,           // 책 페이지 수 (API로 가져올 수 있다면)

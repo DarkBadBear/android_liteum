@@ -46,16 +46,8 @@ interface ReviewLogsDao {
      * @param id 가져올 리뷰의 로컬 ID
      * @return 해당 ID의 ReviewLogs 객체 (Flow 형태, 없을 경우 null 포함 가능)
      */
-    @Query("SELECT * FROM user_reviews WHERE id = :id")
+    @Query("SELECT * FROM book_reviews WHERE id = :id")
     fun getReviewByLocalId(id: Long): Flow<ReviewLogs?>
-
-    /**
-     * 서버 ID를 사용하여 특정 사용자 리뷰를 가져옵니다.
-     * @param serverReviewId 가져올 리뷰의 서버 ID
-     * @return 해당 serverReviewId의 ReviewLogs 객체 (Flow 형태, 없을 경우 null 포함 가능)
-     */
-    @Query("SELECT * FROM user_reviews WHERE server_review_id = :serverReviewId")
-    fun getReviewByServerId(serverReviewId: Long): Flow<ReviewLogs?>
 
 
     /**
@@ -63,7 +55,7 @@ interface ReviewLogsDao {
      * @param bookLogLocalId 조회할 책의 로컬 ID
      * @return 해당 책의 ReviewLogs 리스트 (Flow 형태)
      */
-    @Query("SELECT * FROM user_reviews WHERE book_log_local_id = :bookLogLocalId ORDER BY created_at_millis DESC")
+    @Query("SELECT * FROM book_reviews WHERE book_log_local_id = :bookLogLocalId ORDER BY created_at_millis DESC")
     fun getReviewsForBook(bookLogLocalId: Long): Flow<List<ReviewLogs>>
 
     /**
@@ -71,7 +63,7 @@ interface ReviewLogsDao {
      * @param bookLogLocalId 조회할 책의 로컬 ID
      * @return PagingSource<Int, ReviewLogs>
      */
-    @Query("SELECT * FROM user_reviews WHERE book_log_local_id = :bookLogLocalId ORDER BY created_at_millis DESC")
+    @Query("SELECT * FROM book_reviews WHERE book_log_local_id = :bookLogLocalId ORDER BY created_at_millis DESC")
     fun getReviewsForBookPaged(bookLogLocalId: Long): PagingSource<Int, ReviewLogs>
 
 
@@ -80,7 +72,7 @@ interface ReviewLogsDao {
      * @param memberId 조회할 사용자의 ID
      * @return 해당 사용자의 ReviewLogs 리스트 (Flow 형태)
      */
-    @Query("SELECT * FROM user_reviews WHERE member_id = :memberId ORDER BY created_at_millis DESC")
+    @Query("SELECT * FROM book_reviews WHERE member_id = :memberId ORDER BY created_at_millis DESC")
     fun getReviewsByMember(memberId: String): Flow<List<ReviewLogs>>
 
     /**
@@ -88,41 +80,35 @@ interface ReviewLogsDao {
      * @param memberId 조회할 사용자의 ID
      * @return PagingSource<Int, ReviewLogs>
      */
-    @Query("SELECT * FROM user_reviews WHERE member_id = :memberId ORDER BY created_at_millis DESC")
+    @Query("SELECT * FROM book_reviews WHERE member_id = :memberId ORDER BY created_at_millis DESC")
     fun getReviewsByMemberPaged(memberId: String): PagingSource<Int, ReviewLogs>
 
     /**
      * 로컬 ID로 특정 리뷰를 삭제합니다.
      * @param id 삭제할 리뷰의 로컬 ID
      */
-    @Query("DELETE FROM user_reviews WHERE id = :id")
+    @Query("DELETE FROM book_reviews WHERE id = :id")
     suspend fun deleteReviewByLocalId(id: Long): Int
 
-    /**
-     * 서버 ID로 특정 리뷰를 삭제합니다.
-     * @param serverReviewId 삭제할 리뷰의 서버 ID
-     */
-    @Query("DELETE FROM user_reviews WHERE server_review_id = :serverReviewId")
-    suspend fun deleteReviewByServerId(serverReviewId: Long): Int
 
 
     /**
      * 특정 책(bookLogLocalId 기준)에 달린 모든 리뷰를 삭제합니다.
      * @param bookLogLocalId 리뷰를 삭제할 책의 로컬 ID
      */
-    @Query("DELETE FROM user_reviews WHERE book_log_local_id = :bookLogLocalId")
+    @Query("DELETE FROM book_reviews WHERE book_log_local_id = :bookLogLocalId")
     suspend fun deleteAllReviewsForBook(bookLogLocalId: Long): Int
 
     /**
      * 특정 사용자가 작성한 모든 리뷰를 삭제합니다.
      * @param memberId 리뷰를 삭제할 사용자 ID
      */
-    @Query("DELETE FROM user_reviews WHERE member_id = :memberId")
+    @Query("DELETE FROM book_reviews WHERE member_id = :memberId")
     suspend fun deleteAllReviewsByMember(memberId: String): Int
 
     /**
      * 모든 리뷰를 삭제합니다. (주의해서 사용)
      */
-    @Query("DELETE FROM user_reviews")
+    @Query("DELETE FROM book_reviews")
     suspend fun deleteAllReviews(): Int
 }

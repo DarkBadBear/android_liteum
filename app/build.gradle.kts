@@ -117,6 +117,7 @@ dependencies {
     implementation(libs.generativeai)
     implementation(libs.androidx.datastore.core)
     implementation(libs.books)
+    implementation(libs.androidx.paging.compose)
     kapt(libs.hilt.compiler)
     implementation(libs.javax.inject)
 

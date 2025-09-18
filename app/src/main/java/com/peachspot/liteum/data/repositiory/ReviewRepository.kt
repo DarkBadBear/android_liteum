@@ -44,13 +44,6 @@ interface ReviewRepository {
     fun getReviewByLocalId(reviewId: Long): Flow<ReviewLogs?>
 
     /**
-     * 서버 ID로 특정 리뷰를 가져옵니다. (서버와 동기화 시 사용)
-     * @param serverReviewId 가져올 리뷰의 서버 ID
-     * @return 해당 서버 ID의 ReviewLogs 객체 (Flow 형태, 없을 경우 null 포함 가능)
-     */
-    fun getReviewByServerId(serverReviewId: Long): Flow<ReviewLogs?>
-
-    /**
      * 특정 책(로컬 ID 기준)에 대한 모든 리뷰를 가져옵니다.
      * @param bookLogLocalId 리뷰를 가져올 책의 로컬 ID
      * @return 해당 책의 리뷰 리스트 (Flow 형태, 최신순 정렬)
@@ -84,14 +77,6 @@ interface ReviewRepository {
      * @return 삭제된 행의 수
      */
     suspend fun deleteReviewByLocalId(reviewId: Long): Int
-
-    /**
-     * 서버 ID로 특정 리뷰를 삭제합니다. (서버와 동기화 시 사용)
-     * @param serverReviewId 삭제할 리뷰의 서버 ID
-     * @return 삭제된 행의 수
-     */
-    suspend fun deleteReviewByServerId(serverReviewId: Long): Int
-
     /**
      * 특정 책(로컬 ID 기준)에 대한 모든 리뷰를 삭제합니다.
      * @param bookLogLocalId 리뷰를 삭제할 책의 로컬 ID
@@ -110,8 +95,6 @@ interface ReviewRepository {
     // suspend fun syncReviewUpstream(reviewLog: ReviewLogs): Result<ReviewLogs> // 로컬 리뷰 서버에 업로드
     // suspend fun syncReviewsDownstream(bookLogLocalId: Long) // 특정 책의 리뷰를 서버에서 받아오기
 }
-
-
 
 
 
@@ -154,9 +137,7 @@ class ReviewRepositoryImpl(
         return reviewLogsDao.getReviewByLocalId(reviewId)
     }
 
-    override fun getReviewByServerId(serverReviewId: Long): Flow<ReviewLogs?> {
-        return reviewLogsDao.getReviewByServerId(serverReviewId)
-    }
+
 
     override fun getReviewsForBook(bookLogLocalId: Long): Flow<List<ReviewLogs>> {
         return reviewLogsDao.getReviewsForBook(bookLogLocalId)
@@ -190,9 +171,6 @@ class ReviewRepositoryImpl(
         return reviewLogsDao.deleteReviewByLocalId(reviewId)
     }
 
-    override suspend fun deleteReviewByServerId(serverReviewId: Long): Int {
-        return reviewLogsDao.deleteReviewByServerId(serverReviewId)
-    }
 
     override suspend fun deleteAllReviewsForBook(bookLogLocalId: Long): Int {
         return reviewLogsDao.deleteAllReviewsForBook(bookLogLocalId)

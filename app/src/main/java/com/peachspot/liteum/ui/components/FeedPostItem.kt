@@ -44,10 +44,6 @@ fun FeedPostItem(
     feedItem: FeedItem,
     onItemClick: (FeedItem) -> Unit,
     modifier: Modifier = Modifier,
-
-//    onOpenDialogRequest: (clickedReview: BookReview) -> Unit,
-//    onDeleteActionFromItemMenu: ((reviewId: String) -> Unit)? = null,
-//    navController: NavController? = null // 필요 여부에 따라 Nullable 또는 제거 고려
 ){
     var showReviewDialog by remember { mutableStateOf(false) }
     val currentReview = feedItem.reviews.firstOrNull() // 예시로 첫 번째 리뷰를 사용, 실제로는 어떤 리뷰를 보여줄지 로직 필요
@@ -92,7 +88,7 @@ fun FeedPostItem(
                 when (page) {
                     0 -> {
                         AsyncImage(
-                            model = feedItem.postImageUrl,
+                            model = feedItem.bookImageUrl,
                             contentDescription = "${feedItem.bookTitle} 표지",
                             modifier = Modifier.fillMaxSize().clickable { onItemClick(feedItem) },
                             contentScale = ContentScale.Crop

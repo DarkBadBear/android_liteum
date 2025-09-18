@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Application
 // import android.content.Context // 웹뷰 사용 안 함
 import android.content.IntentSender
+import android.net.Uri
 import android.util.Log
 // import androidx.compose.animation.core.copy // 현재 파일에서 사용 안 함
 // import android.webkit.WebView // 웹뷰 사용 안 함
@@ -22,7 +23,7 @@ import com.google.firebase.messaging.FirebaseMessaging
 import com.peachspot.liteum.R
 import com.peachspot.liteum.data.remote.api.MyApiService
 import com.peachspot.liteum.data.remote.client.NetworkClient
-import com.peachspot.liteum.data.repositiory.HomeRepository
+
 import com.peachspot.liteum.data.repositiory.UserPreferencesRepository
 import com.peachspot.liteum.data.repositiory.UserProfileData
 
@@ -49,13 +50,18 @@ import com.kakao.sdk.user.UserApiClient
 import com.kakao.sdk.user.model.User // 카카오 User 모델 직접 사용을 위해
 import com.peachspot.liteum.data.db.BookLogs
 import com.peachspot.liteum.data.db.BookLogsDao
+import com.peachspot.liteum.data.db.ReviewLogs
 import com.peachspot.liteum.data.model.FeedItem
+import com.peachspot.liteum.data.repositiory.BookRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted // `feedItems` 선언에 사용
 import kotlinx.coroutines.flow.catch // `feedItems` 선언에 사용
 import kotlinx.coroutines.flow.onStart // `feedItems` 선언에 사용
 import kotlinx.coroutines.flow.stateIn // `feedItems` 선언에 사용
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.coroutines.resume
 
 // DataStore 정의는 유지
@@ -84,16 +90,87 @@ class HomeViewModel(
     private val firebaseAuth: FirebaseAuth,
     private val credentialManager: CredentialManager,
     private val myApiService: MyApiService,
-    private val homeRepository: HomeRepository
+    private val bookRepository: BookRepository
 ) : ViewModel() {
-
+    private fun formatDateToString(date: Date?): String? {
+        return date?.let {
+            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(it)
+        }
+    }
     private val _loginResult = MutableStateFlow<Result<String>?>(null)
     val loginResult: StateFlow<Result<String>?> = _loginResult
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
+    fun saveBookAndReview(
+        bookTitle: String,
+        selectedImageFilePath: String?, // Uri?에서 String?으로 변경 (파일 경로)
+        reviewText: String,
+        rating: Float,
+        author: String?,
+        publisher: String?,
+        publishDate: Date?, // UI에서 Date? 그대로 받음
+        isbn: String?,
+        startDate: Date?, // UI에서 Date? 그대로 받음
+        endDate: Date?, // UI에서 Date? 그대로 받음
+        memberId: String,
+        shareReview: String // "Y" 또는 "N"
+    ) {
+        viewModelScope.launch {
+            try {
+                // 1. BookLogs 객체 생성
+                // coverImageUri는 Uri를 String으로 변환하여 저장합니다.
+                // 날짜 관련 필드들은 String? 형태로 변환하여 저장합니다.
+                val bookLog = BookLogs(
+                    // id는 autoGenerate이므로 0L 또는 기본값으로 둡니다.
+                    bookTitle = bookTitle,
+                    coverImageUri = selectedImageFilePath?.toString() ?: "", // Uri를 String으로, null이면 빈 문자열
+                    startReadDate = formatDateToString(startDate),
+                    endReadDate = formatDateToString(endDate),
+                    author = author,
+                    member_id = memberId, // BookLogs를 생성한 사용자 ID
+                    bookGenre = null, // 현재 UI에서 입력받지 않으므로 null 또는 기본값
+                    publishDate = formatDateToString(publishDate),
+                    isbn = isbn,
+                    rating = rating, // BookLogs에도 평점 저장 (선택 사항)
+                    pageCount = null, // 현재 UI에서 입력받지 않으므로 null 또는 기본값
+                    publisher = publisher,
+                    createdAtMillis = System.currentTimeMillis() // 현재 시간으로 생성 시간 기록
+                )
+
+                // 2. BookLogs를 데이터베이스에 삽입하고 생성된 ID를 받음
+                val newBookLogId = bookRepository.insertBookLog(bookLog)
+
+                if (newBookLogId > 0) { // 성공적으로 BookLog가 삽입되었다면 (ID가 0보다 크면 성공으로 간주)
+                    // 3. ReviewLogs 객체 생성
+                    val reviewLog = ReviewLogs(
+                        // id는 autoGenerate이므로 0L 또는 기본값으로 둡니다.
+                        bookLogLocalId = newBookLogId, // 위에서 받은 BookLog의 ID를 외래 키로 사용
+                        reviewText = reviewText,
+                        share = shareReview,
+                        createdAtMillis = System.currentTimeMillis(),
+                        updatedAtMillis = System.currentTimeMillis(), // 생성 시에는 생성 시간과 동일하게 설정
+                        memberId = memberId // 리뷰를 작성한 사용자 ID
+                    )
+
+                    // 4. ReviewLogs를 데이터베이스에 삽입
+                    bookRepository.insertReviewLog(reviewLog)
+
+                    Log.d("HomeViewModel", "책과 리뷰가 성공적으로 저장되었습니다. BookLog ID: $newBookLogId")
+                    // TODO: 저장 성공 UI 이벤트 발생 (예: LiveData/StateFlow 상태 업데이트)
+                } else {
+                    Log.e("HomeViewModel", "BookLog 저장 실패. 반환된 ID: $newBookLogId")
+                    // TODO: BookLog 저장 실패 UI 이벤트 발생
+                }
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "책과 리뷰 저장 중 오류 발생", e)
+                // TODO: 일반적인 저장 오류 UI 이벤트 발생
+            }
+        }
+    }
+
     // getFeedItemsFlow()를 사용하여 StateFlow로 변환 (기존 방식 유지)
-    val feedItems: StateFlow<List<FeedItem>> = homeRepository.getAllBookFeedItemsFlow() // 메서드 이름 수정
+    val feedItems: StateFlow<List<FeedItem>> = bookRepository.getAllBookFeedItemsFlow() // 메서드 이름 수정
         .onStart {
             Logger.d("HomeViewModel", "feedItems flow started, isLoadingFeed = true")
             _uiState.update { it.copy(isLoadingFeed = true, userMessage = null) } // 에러 메시지 초기화
@@ -136,12 +213,12 @@ class HomeViewModel(
 
     /**
      * 피드를 새로고침합니다.
-     * 이 함수는 `homeRepository.getFeedItemsFlow()`가 새로운 데이터를 방출하도록
+     * 이 함수는 `bookRepository.getFeedItemsFlow()`가 새로운 데이터를 방출하도록
      * Repository 레벨에서 데이터 소스를 갱신하는 로직을 트리거해야 합니다.
      * ViewModel에서 직접 `feedItems` StateFlow의 값을 변경하는 것이 아니라,
      * 데이터 소스의 변경이 Flow를 통해 자연스럽게 반영되도록 합니다.
      *
-     * 현재 `homeRepository`에 명시적인 refresh 함수가 없다면,
+     * 현재 `bookRepository`에 명시적인 refresh 함수가 없다면,
      * 이 함수는 아래와 같이 Repository의 `getFeedItems()` (suspend 함수)를 호출하여
      * 데이터를 가져오고, 그 결과를 별도의 MutableStateFlow (만약 사용한다면)에 할당하거나,
      * 또는 이 함수 자체가 다른 역할을 해야 합니다.
@@ -152,7 +229,7 @@ class HomeViewModel(
     fun loadFeedItems(forceRefresh: Boolean = false) {
         // `feedItems`가 Flow를 통해 데이터를 받고 있으므로, 이 함수는
         // Repository에 "새로고침"을 요청하는 형태로 구현되어야 합니다.
-        // 예를 들어, HomeRepository에 refreshFeeds() 같은 함수가 있고,
+        // 예를 들어, BookRepository에 refreshFeeds() 같은 함수가 있고,
         // 그 함수가 내부적으로 데이터 소스를 업데이트하여 getFeedItemsFlow()가 새 값을 방출하도록 합니다.
 
         // 또는, 이 함수를 유지하고 싶다면 ViewModel 내부에 별도의 MutableStateFlow를 두고
@@ -167,9 +244,9 @@ class HomeViewModel(
         // viewModelScope.launch { // 이 블록은 Repository의 refresh 로직을 호출해야 함
         //     _uiState.update { it.copy(isLoadingFeed = true) }
         //     try {
-        //         // 예시: homeRepository.refreshFeedData() // 이 함수가 내부적으로 데이터 소스를 갱신
+        //         // 예시: bookRepository.refreshFeedData() // 이 함수가 내부적으로 데이터 소스를 갱신
         //         // 그러면 feedItems Flow가 자동으로 새 데이터를 받게 됨.
-        //         // 또는 homeRepository.getFeedItems()를 호출하고 그 결과를 어딘가에 써야하는데,
+        //         // 또는 bookRepository.getFeedItems()를 호출하고 그 결과를 어딘가에 써야하는데,
         //         // 현재 feedItems는 Flow 기반이라 직접 할당할 수 없음.
         //         Logger.d("HomeViewModel", "Feed refresh triggered (simulated).")
         //     } catch (e: Exception) {
@@ -190,7 +267,7 @@ class HomeViewModel(
                 // UI에 로딩 상태를 먼저 반영
                 _uiState.update { it.copy(isLoadingFeed = true) }
                 // Repository에 데이터 새로고침을 요청 (이런 함수가 Repository에 있다고 가정)
-                // 예: homeRepository.triggerFeedRefresh()
+                // 예: bookRepository.triggerFeedRefresh()
                 // 이 호출 후, feedItems Flow가 새 데이터를 받으면 map 연산자에서 isLoadingFeed가 false로 바뀜.
                 // 만약 triggerFeedRefresh가 오래 걸리고 즉각적인 피드백이 필요하면, 여기서 잠시 후 로딩을 끌 수 있으나
                 // Flow의 데이터 수신 시점으로 제어하는 것이 더 정확함.
@@ -575,7 +652,7 @@ class HomeViewModel(
     }
 
     fun getBookLogById(id: Long): Flow<BookLogs?> {
-        return homeRepository.getBookLogById(id)
+        return bookRepository.getBookLogById(id)
     }
 
     /**
@@ -584,7 +661,7 @@ class HomeViewModel(
     fun updateBookLog(bookLog: BookLogs) {
         viewModelScope.launch {
             try {
-                val result = homeRepository.updateBookLog(bookLog)
+                val result = bookRepository.updateBookLog(bookLog)
                 if (result > 0) {
                     // 업데이트 성공
                     Log.d("HomeViewModel", "BookLog updated successfully")

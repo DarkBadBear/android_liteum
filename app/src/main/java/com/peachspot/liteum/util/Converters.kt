@@ -27,6 +27,8 @@ class Converters {
         }
     }
 
+
+
     // --- LocalDate <-> Long (Epoch Day) 변환 (주석 처리 또는 삭제) ---
     // 아래 메서드 쌍은 LocalDate를 Long 타입으로 저장할 때 사용되지만,
     // 현재 String 저장 방식을 선택했으므로 주석 처리하거나 삭제합니다.

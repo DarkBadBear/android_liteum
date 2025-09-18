@@ -17,7 +17,7 @@ import androidx.room.TypeConverters
         BookLogs::class,
         NotificationEntity::class
     ],
-    version = 1, // 실제 데이터베이스 버전에 맞게 수정
+    version = 2, // 실제 데이터베이스 버전에 맞게 수정
     exportSchema = false
 )
 // AppDatabase 클래스를 public으로 변경합니다. (Kotlin에서 abstract 클래스는 기본적으로 open 입니다)
@@ -39,7 +39,7 @@ public abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .fallbackToDestructiveMigration(false) // 마이그레이션 전략에 따라 변경 가능
+                    .fallbackToDestructiveMigration(true) // 마이그레이션 전략에 따라 변경 가능
                     .build()
                 INSTANCE = instance
                 instance

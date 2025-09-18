@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.peachspot.liteum.data.db.BookLogsDao
 import com.peachspot.liteum.data.remote.api.MyApiService
-import com.peachspot.liteum.data.repositiory.HomeRepository
+import com.peachspot.liteum.data.repositiory.BookRepository
 import com.peachspot.liteum.data.repositiory.UserPreferencesRepository
 import com.peachspot.liteum.util.Logger
 
@@ -17,7 +17,7 @@ class HomeViewModelFactory(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val firebaseAuth: FirebaseAuth,
     private val myApiService: MyApiService,
-    private val homeRepository: HomeRepository,
+    private val homeRepository: BookRepository,
 
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")

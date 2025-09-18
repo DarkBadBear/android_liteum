@@ -6,49 +6,52 @@ import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.DrawableRes
+// import androidx.annotation.DrawableRes // 사용하지 않으면 제거 가능
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+// import androidx.compose.foundation.Image // Coil 사용 시 직접 사용 안 할 수 있음
+// import androidx.compose.foundation.background // 사용하지 않으면 제거 가능
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+// import androidx.compose.foundation.interaction.MutableInteractionSource // 사용하지 않으면 제거 가능
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+// import androidx.compose.foundation.shape.CircleShape // 사용하지 않으면 제거 가능
+// import androidx.compose.foundation.shape.RoundedCornerShape // 사용하지 않으면 제거 가능
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
+// import androidx.compose.material.icons.filled.Delete // 사용하지 않으면 제거 가능
 
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+// import androidx.compose.runtime.getValue // 명시적 import 불필요
+// import androidx.compose.runtime.setValue // 명시적 import 불필요
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+// import androidx.compose.ui.draw.clip // 사용하지 않으면 제거 가능
+// import androidx.compose.ui.graphics.Color // 사용하지 않으면 제거 가능
+// import androidx.compose.ui.layout.ContentScale // ImagePickerSection 내부에서 사용
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
+// import androidx.compose.ui.tooling.preview.Preview // 프리뷰에서만 필요
+// import androidx.compose.ui.unit.Dp // 사용하지 않으면 제거 가능
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 
-import coil.compose.rememberAsyncImagePainter
+// import coil.compose.rememberAsyncImagePainter // ImagePickerSection 내부에서 사용될 수 있음
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -56,17 +59,13 @@ import com.peachspot.liteum.R // 실제 R 파일 경로로 확인 필요
 import com.peachspot.liteum.viewmodel.BookSearchViewModel
 import com.peachspot.liteum.viewmodel.HomeViewModel // 실제 ViewModel 경로로 확인 필요
 import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.collections.isNotEmpty
-import kotlin.collections.map
+// import kotlin.collections.isNotEmpty // 명시적 import 불필요
+// import kotlin.collections.map // 명시적 import 불필요
 
-import androidx.compose.runtime.Composable
-
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
-
-import androidx.compose.ui.unit.dp
 import com.peachspot.liteum.ui.components.DateInputTextField
 import com.peachspot.liteum.ui.components.ImagePickerSection
 import com.peachspot.liteum.ui.components.MyDatePickerDialog
@@ -75,11 +74,44 @@ import com.peachspot.liteum.ui.components.SectionTitle
 import com.peachspot.liteum.ui.components.StarRatingInput
 import com.peachspot.liteum.viewmodel.BookSearchViewModelFactory
 
-// Context 확장 함수를 만들어 파일 생성 및 Uri 가져오기를 쉽게 합니다.
-fun Context.createImageFile(): File {
+// --- 이미지 저장 유틸리티 함수 ---
+fun saveImageToInternalStorage(context: Context, uri: Uri, desiredFileNamePrefix: String = "LITEUM_COVER_"): File? {
+    val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+
+    // 저장할 디렉토리 (예: /data/data/com.your.package/files/images)
+    val outputDir = File(context.filesDir, "images")
+    if (!outputDir.exists()) {
+        outputDir.mkdirs()
+    }
+
+    // 파일 이름 생성 (중복 방지를 위해 타임스탬프 사용)
+    val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmssSSS", Locale.getDefault()).format(Date())
+    val fileExtension = ".jpg" // 기본 확장자, 실제 MIME 타입에 따라 변경 가능
+    val fileName = "${desiredFileNamePrefix}${timeStamp}${fileExtension}"
+    val outputFile = File(outputDir, fileName)
+
+    try {
+        FileOutputStream(outputFile).use { outputStream ->
+            inputStream.use { input ->
+                input.copyTo(outputStream)
+            }
+        }
+        Log.d("ImageSaveUtil", "이미지 내부 저장 성공: ${outputFile.absolutePath}")
+        return outputFile
+    } catch (e: IOException) {
+        Log.e("ImageSaveUtil", "이미지 저장 실패", e)
+        outputFile.delete() // 실패 시 불완전한 파일 삭제
+        return null
+    }
+}
+
+
+// Context 확장 함수를 만들어 카메라 촬영용 임시 파일 생성
+fun Context.createImageFileForCamera(): File {
     val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-    val imageFileName = "JPEG_${timeStamp}_"
-    val storageDir = File(externalCacheDir, "images") // AndroidManifest.xml 및 file_paths.xml 와 일치 확인
+    val imageFileName = "JPEG_TEMP_${timeStamp}_"
+    // 카메라 촬영용 임시 파일은 앱 외부 캐시 디렉토리에 저장 (FileProvider를 통해 접근)
+    val storageDir = File(externalCacheDir, "temp_images")
     if (!storageDir.exists()) {
         storageDir.mkdirs()
     }
@@ -94,14 +126,19 @@ fun Context.createImageFile(): File {
 @Composable
 fun ReviewScreen(
     navController: NavController,
-    viewModel: HomeViewModel, // 사용하지 않는다면 제거 또는 ReviewViewModel 등으로 대체
+    viewModel: HomeViewModel,
     modifier: Modifier = Modifier,
 ) {
     var bookTitle by remember { mutableStateOf("") }
     var reviewText by remember { mutableStateOf("") }
     var rating by remember { mutableStateOf(0f) }
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) } // 최종 선택/촬영된 이미지 Uri
-    var tempImageFile by remember { mutableStateOf<File?>(null) } // 카메라 촬영 시 임시 파일 저장용
+
+    // UI에 표시될 이미지 Uri (로컬 파일 Uri 또는 Content Uri가 될 수 있음)
+    var displayImageUri by remember { mutableStateOf<Uri?>(null) }
+    // 카메라 촬영 시 임시 파일 저장용
+    var tempCameraImageFile by remember { mutableStateOf<File?>(null) }
+    // DB에 저장될 최종 이미지 파일의 경로 (String)
+    var finalImageFilePath by remember { mutableStateOf<String?>(null) }
 
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
     var author by remember { mutableStateOf("") }
@@ -117,46 +154,67 @@ fun ReviewScreen(
 
     val context = LocalContext.current
     val dateFormatter = remember { SimpleDateFormat("yyyy년 MM월 dd일", Locale.KOREAN) }
-    val bookSearchViewModelFactory = BookSearchViewModelFactory(viewModel)
-    Log.d("ViewModelDebug", "BookSearchViewModelFactory instance: $bookSearchViewModelFactory") // 로그 추가
 
-    val bookSearchViewModel: BookSearchViewModel = viewModel(
-        factory = bookSearchViewModelFactory
-    )
-    Log.d("ViewModelDebug", "BookSearchViewModel instance: $bookSearchViewModel") // 로그 추가
+    val bookSearchViewModelFactory = BookSearchViewModelFactory(viewModel)
+    val bookSearchViewModel: BookSearchViewModel = viewModel(factory = bookSearchViewModelFactory)
     val isLoadingBooks by bookSearchViewModel.isLoading.collectAsState()
     val searchError by bookSearchViewModel.errorMessage.collectAsState()
 
 
-    // 갤러리 실행을 위한 Launcher
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        selectedImageUri = uri
-        tempImageFile = null // 갤러리 선택 시 임시 파일은 사용 안 함
+        uri?.let { sourceUri ->
+            val savedImageFile = saveImageToInternalStorage(context, sourceUri)
+            if (savedImageFile != null) {
+                displayImageUri = Uri.fromFile(savedImageFile) // UI 표시용
+                finalImageFilePath = savedImageFile.absolutePath // DB 저장용
+                Log.d("ReviewScreen", "갤러리 이미지 저장: ${finalImageFilePath}")
+            } else {
+                Log.e("ReviewScreen", "갤러리 이미지 내부 저장 실패")
+                // TODO: 사용자에게 오류 메시지 표시 (Snackbar 등)
+            }
+            tempCameraImageFile = null // 갤러리 선택 시 카메라 임시 파일은 무효화
+        }
     }
 
-    // 카메라 실행 및 결과 처리를 위한 Launcher
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture(),
         onResult = { success ->
             if (success) {
-                selectedImageUri = tempImageFile?.let { file ->
-                    FileProvider.getUriForFile(
+                tempCameraImageFile?.let { capturedFile ->
+                    val sourceUriForCamera = FileProvider.getUriForFile(
                         context,
                         "${context.packageName}.fileprovider", // AndroidManifest.xml의 authorities와 일치
-                        file
+                        capturedFile
                     )
+                    // 촬영된 임시 파일을 내부 저장소로 복사
+                    val savedImageFileFromCamera = saveImageToInternalStorage(context, sourceUriForCamera, "CAMERA_")
+                    if (savedImageFileFromCamera != null) {
+                        displayImageUri = Uri.fromFile(savedImageFileFromCamera) // UI 표시용
+                        finalImageFilePath = savedImageFileFromCamera.absolutePath // DB 저장용
+                        Log.d("ReviewScreen", "카메라 이미지 저장: ${finalImageFilePath}")
+                        // 원본 임시 카메라 파일 삭제 (내부 저장소로 복사했으므로)
+                        capturedFile.delete()
+                        tempCameraImageFile = null
+                    } else {
+                        Log.e("ReviewScreen", "카메라 이미지 내부 저장 실패")
+                        // TODO: 사용자에게 오류 메시지 표시
+                        // 이 경우, 임시 파일을 바로 사용할 수도 있지만, 앱 재시작 시 사라질 수 있음
+                        // displayImageUri = sourceUriForCamera // 임시 파일 URI를 UI에 표시 (비추천)
+                        // finalImageFilePath = capturedFile.absolutePath // 임시 파일 경로를 DB에 저장 (비추천)
+                    }
                 }
             } else {
                 // 촬영 실패 또는 취소 시 임시 파일 삭제
-                tempImageFile?.delete()
-                tempImageFile = null
+                tempCameraImageFile?.delete()
+                tempCameraImageFile = null
+                Log.d("ReviewScreen", "카메라 촬영 취소 또는 실패")
             }
         }
     )
 
-    val datePickerState = rememberDatePickerState()
+    val datePickerState = rememberDatePickerState() // Material 3 DatePickerState
     val confirmEnabled by remember {
         derivedStateOf { datePickerState.selectedDateMillis != null }
     }
@@ -168,7 +226,7 @@ fun ReviewScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        stringResource(R.string.screen_title_review_creation), // 문자열 리소스 확인
+                        stringResource(R.string.screen_title_review_creation),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -177,7 +235,7 @@ fun ReviewScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.cd_navigate_up) // 문자열 리소스 확인
+                            contentDescription = stringResource(R.string.cd_navigate_up)
                         )
                     }
                 },
@@ -189,16 +247,36 @@ fun ReviewScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = {
-                    if (bookTitle.isNotBlank() && selectedImageUri != null && reviewText.isNotBlank() && rating > 0) {
-                        // TODO: 저장 로직 (viewModel.saveReview(...))
-                        // 예: viewModel.saveReview(bookTitle, reviewText, rating, selectedImageUri, author, ...)
+                    // finalImageFilePath가 null이 아니어야 이미지가 정상적으로 저장된 것
+                    if (bookTitle.isNotBlank() && finalImageFilePath != null && reviewText.isNotBlank() && rating > 0) {
+                        val currentMemberId = "temp_user_id" // TODO: 실제 사용자 ID 가져오기
+                        val sharePreference = "Y" // TODO: UI에서 사용자 선택 받기 (공개/비공개)
+
+                        viewModel.saveBookAndReview(
+                            bookTitle = bookTitle,
+                            selectedImageFilePath = finalImageFilePath, // 저장된 파일 경로 전달
+                            reviewText = reviewText,
+                            rating = rating,
+                            author = author.ifBlank { null },
+                            publisher = publisher.ifBlank { null },
+                            publishDate = publishDate,
+                            isbn = isbn.ifBlank { null },
+                            startDate = startDate,
+                            endDate = endDate,
+                            memberId = currentMemberId,
+                            shareReview = sharePreference
+                        )
+                        Log.d("ReviewScreen", "리뷰 저장 요청: Book '$bookTitle', ImagePath '$finalImageFilePath'")
                         navController.popBackStack()
+                        // TODO: 저장 성공 Snackbar 표시
                     } else {
+                        Log.w("ReviewScreen", "필수 항목 누락: 제목, 이미지, 리뷰, 별점 중 하나 이상이 비어있거나 이미지 저장이 안됨.")
                         // TODO: 사용자에게 필수 항목 입력 안내 (Snackbar 등)
+                        // 예: Toast.makeText(context, "제목, 이미지, 리뷰 내용, 별점은 필수 항목입니다.", Toast.LENGTH_LONG).show()
                     }
                 },
                 icon = { Icon(Icons.Filled.Check, contentDescription = null) },
-                text = { Text(stringResource(R.string.button_save_review), fontWeight = FontWeight.SemiBold) }, // 문자열 리소스 확인
+                text = { Text(stringResource(R.string.button_save_review), fontWeight = FontWeight.SemiBold) },
                 modifier = Modifier.padding(16.dp),
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
@@ -216,17 +294,16 @@ fun ReviewScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-
             ImagePickerSection(
-                selectedImageUri = selectedImageUri,
+                selectedImageUri = displayImageUri, // UI 표시용 Uri
                 onGalleryClick = { galleryLauncher.launch("image/*") },
                 onCameraClick = {
                     if (cameraPermissionState.status.isGranted) {
-                        val newFile = context.createImageFile()
-                        tempImageFile = newFile
+                        val newFile = context.createImageFileForCamera()
+                        tempCameraImageFile = newFile
                         val uriForCamera = FileProvider.getUriForFile(
                             context,
-                            "${context.packageName}.fileprovider",
+                            "${context.packageName}.fileprovider", // AndroidManifest.xml의 authorities와 일치
                             newFile
                         )
                         cameraLauncher.launch(uriForCamera)
@@ -235,92 +312,71 @@ fun ReviewScreen(
                     }
                 },
                 onImageClearClick = {
-                    selectedImageUri = null
-                    tempImageFile?.delete()
-                    tempImageFile = null
+                    displayImageUri = null
+                    finalImageFilePath = null // DB에 저장될 경로도 초기화
+                    // 만약 tempCameraImageFile이 있다면 그것도 삭제/초기화 고려
+                    tempCameraImageFile?.delete()
+                    tempCameraImageFile = null
+                    Log.d("ReviewScreen", "이미지 선택 초기화")
                 }
             )
 
             ReviewSectionCard {
-                SectionTitle(
-                    text = "리뷰",
-                    //iconResId = R.drawable.ic_book // 아이콘 리소스 확인
-                )
-
+                SectionTitle(text = "리뷰")
                 val searchResults by bookSearchViewModel.searchResults.collectAsState()
-
                 var showSearchResultsDialog by remember { mutableStateOf(false) }
 
-                // searchResults가 비어있지 않고, 아직 다이얼로그가 표시되지 않았다면 표시하도록 설정
-                // 사용자가 명시적으로 닫기 전까지는 계속 떠 있도록 하거나, 새로운 검색 시 자동으로 갱신/표시되도록 할 수 있음
                 LaunchedEffect(searchResults) {
                     if (searchResults.isNotEmpty()) {
                         showSearchResultsDialog = true
                     }
                 }
 
-
                 val keyboardController = LocalSoftwareKeyboardController.current
 
                 OutlinedTextField(
                     value = bookTitle,
-                    onValueChange = { newTitle ->
-                        bookTitle = newTitle
-                        // 사용자가 입력을 멈췄을 때 자동으로 검색 (Debounce 적용 추천)
-                        if (newTitle.length > 2) { // 예: 3글자 이상 입력 시 검색
-                            // 자동 검색 로직 (선택 사항)
-                            // bookSearchViewModel.searchBooksByTitle(newTitle)
-                        }
-                    },
+                    onValueChange = { newTitle -> bookTitle = newTitle },
                     label = { Text("제목 *") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(
-                        imeAction = ImeAction.Search // 키보드 액션 버튼을 '검색'으로 설정
-                    ),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(
-                        onSearch = { // 키보드의 '검색' 버튼 클릭 시
+                        onSearch = {
                             if (bookTitle.isNotBlank()) {
                                 bookSearchViewModel.searchBooksByTitle(bookTitle)
-                                keyboardController?.hide() // 키보드 숨기기
+                                keyboardController?.hide()
                             }
-                            // showSearchResultsDialog = true (결과가 있을 때)
                         }
                     ),
                     leadingIcon = {
                         Icon(
-                            painter = painterResource(R.drawable.ic_book), // 기존 아이콘 리소스
-                            contentDescription = "Book icon", // contentDescription 추가 권장
+                            painter = painterResource(R.drawable.ic_book),
+                            contentDescription = "Book icon",
                             modifier = Modifier.size(24.dp)
                         )
                     },
-                    trailingIcon = { // 오른쪽 끝에 아이콘 추가
+                    trailingIcon = {
                         IconButton(
                             onClick = {
-                                // 돋보기 아이콘 클릭 시 검색 실행
                                 if (bookTitle.isNotBlank()) {
                                     bookSearchViewModel.searchBooksByTitle(bookTitle)
-                                    keyboardController?.hide() // 키보드 숨기기
+                                    keyboardController?.hide()
                                 }
-                                // showSearchResultsDialog = true (결과가 있을 때)
                             }
                         ) {
                             Icon(
-                                painter = painterResource(R.drawable.ic_search), // 기존 아이콘 리소스
-                                contentDescription = "Search button" // 접근성을 위한 설명
+                                painter = painterResource(R.drawable.ic_search),
+                                contentDescription = "Search button"
                             )
                         }
                     }
                 )
 
-
-
-// 검색 로딩 상태 표시 (예시)
                 if (isLoadingBooks) {
                     CircularProgressIndicator(modifier = Modifier.padding(top = 8.dp))
                 }
 
-// 검색 오류 메시지 표시 (예시)
                 searchError?.let {
                     Text(
                         text = it,
@@ -329,75 +385,60 @@ fun ReviewScreen(
                     )
                 }
 
-                if (searchResults.isNotEmpty()) { // 또는 showSearchResultsDialog 상태 사용
-                    // 예시: 간단히 첫 번째 결과의 제목을 로그로 출력
-                    // 실제로는 AlertDialog, DropdownMenu 등을 사용하여 사용자에게 선택지를 제공
-                    Log.d("BookSearch", "검색 결과: ${searchResults.map { it.volumeInfo?.title }}")
-
-                    // AlertDialog 예시 (간단하게)
-                    // LaunchedEffect(searchResults) { showSearchResultsDialog = true } // 검색 결과 있을 때 다이얼로그 표시
-                    if (showSearchResultsDialog) { // 이 상태를 관리하는 로직 필요
-                        AlertDialog(
-                            onDismissRequest = { showSearchResultsDialog = false },
-                            title = { Text("검색 결과 선택") },
-                            text = {
-                                LazyColumn {
-                                    items(searchResults) { bookItem ->
-                                        val volumeInfo = bookItem.volumeInfo
-                                        val foundIsbn = bookSearchViewModel.getIsbn(bookItem)
-                                        Column(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clickable {
-                                                    bookTitle = volumeInfo?.title ?: ""
-                                                    author = volumeInfo?.authors?.joinToString(", ")
-                                                        ?: ""
-                                                    publisher = volumeInfo?.publisher ?: ""
-                                                    // publishDate, isbn 등도 유사하게 설정
-                                                    // 예: isbn = foundIsbn ?: ""
-                                                    showSearchResultsDialog = false // 선택 후 다이얼로그 닫기
-                                                }
-                                                .padding(vertical = 8.dp)
-                                        ) {
-                                            Text(volumeInfo?.title ?: "제목 없음", style = MaterialTheme.typography.titleMedium)
-                                            Text(volumeInfo?.authors?.joinToString(", ") ?: "저자 정보 없음", style = MaterialTheme.typography.bodyMedium)
-                                            foundIsbn?.let { Text("ISBN: $it", style = MaterialTheme.typography.bodySmall) }
-                                        }
+                if (showSearchResultsDialog && searchResults.isNotEmpty()) {
+                    AlertDialog(
+                        onDismissRequest = { showSearchResultsDialog = false },
+                        title = { Text("검색 결과 선택") },
+                        text = {
+                            LazyColumn {
+                                items(searchResults) { bookItem ->
+                                    val volumeInfo = bookItem.volumeInfo
+                                    val foundIsbn = bookSearchViewModel.getIsbn(bookItem)
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                bookTitle = volumeInfo?.title ?: ""
+                                                author = volumeInfo?.authors?.joinToString(", ") ?: ""
+                                                publisher = volumeInfo?.publisher ?: ""
+                                                isbn = foundIsbn ?: ""
+                                                // TODO: API에서 출간일 정보 파싱하여 publishDate 설정
+                                                showSearchResultsDialog = false
+                                            }
+                                            .padding(vertical = 8.dp)
+                                    ) {
+                                        Text(volumeInfo?.title ?: "제목 없음", style = MaterialTheme.typography.titleMedium)
+                                        Text(volumeInfo?.authors?.joinToString(", ") ?: "저자 정보 없음", style = MaterialTheme.typography.bodyMedium)
+                                        foundIsbn?.let { Text("ISBN: $it", style = MaterialTheme.typography.bodySmall) }
                                     }
                                 }
-                            },
-                            confirmButton = {
-                                TextButton(onClick = { showSearchResultsDialog = false }) {
-                                    Text("닫기")
-                                }
                             }
-                        )
-                    }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { showSearchResultsDialog = false }) {
+                                Text("닫기")
+                            }
+                        }
+                    )
                 }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        DateInputTextField(
-                            label = "시작",
-                            date = startDate.toFormattedString(),
-                            onClick = {
-                                Log.d("DatePickerDebug", "시작 날짜 DateInputTextField 클릭됨!") // <--- 이 로그 확인!
-                                showStartDatePicker = true
-                                Log.d("DatePickerDebug", "showStartDatePicker 상태 변경 후: $showStartDatePicker") // <--- 이 로그 확인!
-
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                        DateInputTextField(
-                            label = "완료",
-                            date = endDate.toFormattedString(),
-                            onClick = { showEndDatePicker = true },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    DateInputTextField(
+                        label = "시작",
+                        date = startDate.toFormattedString(),
+                        onClick = { showStartDatePicker = true },
+                        modifier = Modifier.weight(1f)
+                    )
+                    DateInputTextField(
+                        label = "완료",
+                        date = endDate.toFormattedString(),
+                        onClick = { showEndDatePicker = true },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
 
                 StarRatingInput(
                     currentRating = rating,
@@ -442,7 +483,6 @@ fun ReviewScreen(
                     date = publishDate.toFormattedString(),
                     onClick = { showPublishDatePicker = true }
                 )
-
                 OutlinedTextField(
                     value = isbn,
                     onValueChange = { isbn = it },
@@ -455,7 +495,6 @@ fun ReviewScreen(
                     )
                 )
             }
-
             Spacer(modifier = Modifier.height(80.dp)) // FAB를 위한 공간 확보
         }
     }
@@ -494,4 +533,3 @@ fun ReviewScreen(
         )
     }
 }
-

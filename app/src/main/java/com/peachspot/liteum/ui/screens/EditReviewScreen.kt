@@ -99,7 +99,6 @@ fun ReviewEditScreen(
     LaunchedEffect(existingReview) {
         existingReview?.let { bookLog ->
             bookTitle = bookLog.bookTitle
-            reviewText = bookLog.reviewText ?: ""
             rating = bookLog.rating ?: 0f
             author = bookLog.author ?: ""
             publisher = bookLog.publisher ?: ""
@@ -203,7 +202,6 @@ fun ReviewEditScreen(
                         // BookLogs 업데이트 로직
                         val updatedBookLog = existingReview?.copy(
                             bookTitle = bookTitle,
-                            reviewText = reviewText,
                             rating = rating,
                             author = author.takeIf { it.isNotBlank() },
                             publisher = publisher.takeIf { it.isNotBlank() },
@@ -274,7 +272,7 @@ fun ReviewEditScreen(
                         onGalleryClick = { galleryLauncher.launch("image/*") },
                         onCameraClick = {
                             if (cameraPermissionState.status.isGranted) {
-                                val newFile = context.createImageFile()
+                                val newFile = context.createImageFileForCamera()
                                 tempImageFile = newFile
                                 val uriForCamera = FileProvider.getUriForFile(
                                     context,

@@ -52,7 +52,7 @@ import com.peachspot.liteum.viewmodel.NotificationViewModel
 import com.peachspot.liteum.viewmodel.NotificationViewModelFactory
 import kotlinx.coroutines.launch
 
-
+import  com.peachspot.liteum.viewmodel.FeedViewModel
 
 // HomeScreen.kt 또는 Preview들을 모아두는 별도의 파일
 
@@ -86,6 +86,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp // dp import
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.compose.rememberNavController // rememberNavController는 이미 있었음
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.peachspot.liteum.ui.components.AppBottomNavigationBar
 import com.peachspot.liteum.ui.components.ReviewPreviewDialog
 
@@ -119,6 +121,7 @@ enum class PreviewViewMode { LIST, GRID } // Preview용으로 간단히 정의�
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
+    feedViewModel: FeedViewModel,
     navController: NavController,
     modifier: Modifier = Modifier,
 ) {
@@ -453,73 +456,77 @@ fun HomeScreen(
 
             ) { innerPadding ->
                 // --- 샘플 피드 데이터 ---
-                val feedItems = remember {
-                    listOf(
-                        FeedItem(
-                            "1", "peachspot", "https://picsum.photos/seed/peachspot/100/100",
-                            "https://picsum.photos/seed/book_cover1/600/800",
-                            "멋진 하루를 만드는 작은 습관",
-                            "첫 번째 게시물입니다! 이 책 정말 좋아요. #일상 #책추천", 120, 15,
-                            System.currentTimeMillis() - 100000,
-                            reviews = listOf(
-                                BookReview("1", "1234","독서광1", "정말 감명 깊게 읽었습니다. 삶의 태도를 바꾸는 계기가 되었어요.", 4.5f,""),
+//                val feedItems = remember {
+//                    listOf(
+//                        FeedItem(
+//                            "1", "peachspot", "https://picsum.photos/seed/peachspot/100/100",
+//                            "https://picsum.photos/seed/book_cover1/600/800",
+//                            "멋진 하루를 만드는 작은 습관",
+//                            "첫 번째 게시물입니다! 이 책 정말 좋아요. #일상 #책추천", 120, 15,
+//                            System.currentTimeMillis() - 100000,
+//                            reviews = listOf(
+//                                BookReview("1", "1234","독서광1", "정말 감명 깊게 읽었습니다. 삶의 태도를 바꾸는 계기가 되었어요.", 4.5f,""),
+//
+//                            )
+//                        ),
+//                        FeedItem(
+//                            "2", "tester_01", null,
+//                            "https://picsum.photos/seed/book_cover2/600/700",
+//                            "코딩의 정석: 파이썬 기초",
+//                            "파이썬 입문용으로 최고! #코딩 #개발", 250, 30,
+//                            System.currentTimeMillis() - 200000,
+//                            reviews = listOf(
+//                                BookReview("1","123", "개발자지망생", "쉽고 재미있게 설명해줘서 좋았습니다. 추천!", 5.0f,"")
+//                            )
+//                        ),
+//                        FeedItem(
+//                            "3", "android_dev", "https://picsum.photos/seed/android/100/100",
+//                            "https://picsum.photos/seed/book_cover3/600/750",
+//                            "안드로이드 앱 개발 완벽 가이드",
+//                            "새로운 기능을 개발 중입니다. 이 책 참고하고 있어요! #개발 #안드로이드", 88, 12,
+//                            System.currentTimeMillis() - 300000,
+//                            reviews = emptyList()
+//                        )
+//                    )
+//                }
 
-                            )
-                        ),
-                        FeedItem(
-                            "2", "tester_01", null,
-                            "https://picsum.photos/seed/book_cover2/600/700",
-                            "코딩의 정석: 파이썬 기초",
-                            "파이썬 입문용으로 최고! #코딩 #개발", 250, 30,
-                            System.currentTimeMillis() - 200000,
-                            reviews = listOf(
-                                BookReview("1","123", "개발자지망생", "쉽고 재미있게 설명해줘서 좋았습니다. 추천!", 5.0f,"")
-                            )
-                        ),
-                        FeedItem(
-                            "3", "android_dev", "https://picsum.photos/seed/android/100/100",
-                            "https://picsum.photos/seed/book_cover3/600/750",
-                            "안드로이드 앱 개발 완벽 가이드",
-                            "새로운 기능을 개발 중입니다. 이 책 참고하고 있어요! #개발 #안드로이드", 88, 12,
-                            System.currentTimeMillis() - 300000,
-                            reviews = emptyList()
-                        )
-                    )
-                }
+                val feedItems: LazyPagingItems<FeedItem> = feedViewModel.feedItemsPager.collectAsLazyPagingItems()
+
 
 
                 when (currentViewMode) {
                     ViewMode.LIST -> {
                         FeedList(
                             feedItems = feedItems,
+                            navController ,
                             modifier = Modifier.padding(innerPadding).fillMaxSize(),
                             listState = listState,
-                            onItemClick = { clickedFeedItem ->
-                                openDialogRequiringReview(clickedFeedItem)
-                            },
-//                            onOpenDialogRequest = { feedItem, review ->
-//                                openDialogWithFeedItem(feedItem, review)
-//                            },
-//                            onDeleteActionFromItemMenu = { feedId, reviewId ->
-//                                // viewModel.deleteReview(feedId, reviewId) // ViewModel 호출
-//                                println("삭제 요청 (List Item Menu): Feed ID - $feedId, Review ID - $reviewId")
-//                                scope.launch {
-//                                    snackbarHostState.showSnackbar("리뷰가 삭제되었습니다. (ViewModel 연동 필요)")
-//                                }
-//                            }
-                            // navControllerForFeedItem = navController // 필요시 FeedList에 전달
+                            onItemClick = { clickedFeedItemNullable -> // 파라미터가 FeedItem? 임을 명시
+                                // 여기서 null 체크 후 non-null 타입으로 openDialogRequiringReview 호출
+                                clickedFeedItemNullable?.let { nonNullFeedItem ->
+                                    openDialogRequiringReview(nonNullFeedItem)
+                                }
+                                // 또는, null일 경우 아무것도 안 하거나 다른 처리를 할 수 있음
+                                // if (clickedFeedItemNullable != null) {
+                                //     openDialogRequiringReview(clickedFeedItemNullable)
+                                // }
+                            }
                         )
                     }
                     ViewMode.GRID -> {
                         BookGridFeed(
                             feedItems = feedItems,
-                            onItemClick = { clickedFeedItem ->
-                                openDialogRequiringReview(clickedFeedItem)
-                            },
-                            modifier = Modifier.padding(innerPadding).fillMaxSize()
+                            modifier = Modifier.padding(innerPadding).fillMaxSize(),
+                            onItemClick = { clickedFeedItemNullable -> // 파라미터가 FeedItem? 임을 명시
+                                // 여기서 null 체크 후 non-null 타입으로 openDialogRequiringReview 호출
+                                clickedFeedItemNullable?.let { nonNullFeedItem ->
+                                    openDialogRequiringReview(nonNullFeedItem)
+                                }
+                            }
                         )
                     }
                 }
+
 
                 // --- 공통으로 사용할 다이얼로그 ---
                 if (showFeedItemDialog && selectedFeedItemForDialog != null && reviewForDialog != null) {

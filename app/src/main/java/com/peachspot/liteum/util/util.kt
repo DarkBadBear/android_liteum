@@ -14,6 +14,45 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+import android.content.Context
+import android.net.Uri
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+// 이미지 저장 유틸리티 함수 (예시: 앱 내부 저장소의 'images' 디렉토리에 저장)
+fun saveImageToInternalStorage(context: Context, uri: Uri, desiredFileNamePrefix: String = "COVER_"): File? {
+    val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+
+    // 저장할 디렉토리 (예: /data/data/com.your.package/files/images)
+    val outputDir = File(context.filesDir, "images")
+    if (!outputDir.exists()) {
+        outputDir.mkdirs()
+    }
+
+    // 파일 이름 생성 (중복 방지를 위해 타임스탬프 사용)
+    val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmssSSS", Locale.getDefault()).format(Date())
+    val fileName = "${desiredFileNamePrefix}${timeStamp}.jpg"
+    val outputFile = File(outputDir, fileName)
+
+    try {
+        val outputStream = FileOutputStream(outputFile)
+        inputStream.use { input ->
+            outputStream.use { output ->
+                input.copyTo(output)
+            }
+        }
+        return outputFile
+    } catch (e: IOException) {
+        Log.e("ImageSaveUtil", "이미지 저장 실패", e)
+        outputFile.delete() // 실패 시 불완전한 파일 삭제
+        return null
+    }
+}
+
 
 
 fun LocalDateTime.toEpochMillis(): Long {
