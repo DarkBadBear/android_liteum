@@ -159,8 +159,8 @@ fun LoginScreen(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
                         ) {
-                            (context as? Activity)?.let {
-                                    activity ->viewModel.startGoogleSignIn()
+                            (context as? Activity)?.let { currentActivity ->
+                                viewModel.startGoogleSignIn(currentActivity) // activity 파라미터 전달
                             } ?: run {
                                 Logger.e("LoginScreen", "Context is not an Activity, cannot start Google Sign-In.")
                             }

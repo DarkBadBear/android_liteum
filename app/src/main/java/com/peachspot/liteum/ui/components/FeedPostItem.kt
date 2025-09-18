@@ -58,21 +58,22 @@ fun FeedPostItem(
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AsyncImage(
-                model = feedItem.userProfileImageUrl ?: R.drawable.default_profile_placeholder, // 플레이스홀더 리소스 필요
-                contentDescription = "${feedItem.userName} 프로필 사진",
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(Color.LightGray),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = feedItem.userName,
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                modifier = Modifier.weight(1f)
-            )
+//            AsyncImage(
+//                model = feedItem.userProfileImageUrl ?: R.drawable.default_profile_placeholder, // 플레이스홀더 리소스 필요
+//                contentDescription = "${feedItem.userName} 프로필 사진",
+//                modifier = Modifier
+//                    .size(32.dp)
+//                    .clip(CircleShape)
+//                    .background(Color.LightGray),
+//                contentScale = ContentScale.Crop
+//            )
+            //Spacer(modifier = Modifier.width(8.dp))
+//            Text(
+//                text = feedItem.userName,
+//                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+//                modifier = Modifier.weight(1f)
+//            )
+            Spacer(modifier = Modifier.weight(1f))
             IconButton(onClick = { /* TODO: 더보기 메뉴 */ }) {
                 Icon(Icons.Filled.MoreVert, contentDescription = "더보기")
             }
@@ -90,7 +91,9 @@ fun FeedPostItem(
                         AsyncImage(
                             model = feedItem.bookImageUrl,
                             contentDescription = "${feedItem.bookTitle} 표지",
-                            modifier = Modifier.fillMaxSize().clickable { onItemClick(feedItem) },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clickable { onItemClick(feedItem) },
                             contentScale = ContentScale.Crop
                         )
                     }
@@ -146,12 +149,12 @@ fun FeedPostItem(
                     )
                 }
                 Row {
-                    Text(
-                        text = feedItem.caption, // 또는 currentReview?.content
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
+//                    Text(
+//                        text = feedItem.caption, // 또는 currentReview?.content
+//                        style = MaterialTheme.typography.bodyMedium,
+//                        maxLines = 2,
+//                        overflow = TextOverflow.Ellipsis
+//                    )
                 }
             }
             Spacer(modifier = Modifier.height(4.dp))
