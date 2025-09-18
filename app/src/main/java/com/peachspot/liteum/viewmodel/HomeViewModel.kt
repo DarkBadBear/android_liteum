@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Application
 // import android.content.Context // 웹뷰 사용 안 함
 import android.content.IntentSender
+import android.util.Log
 // import androidx.compose.animation.core.copy // 현재 파일에서 사용 안 함
 // import android.webkit.WebView // 웹뷰 사용 안 함
 import androidx.credentials.ClearCredentialStateRequest
@@ -24,7 +25,7 @@ import com.peachspot.liteum.data.remote.client.NetworkClient
 import com.peachspot.liteum.data.repositiory.HomeRepository
 import com.peachspot.liteum.data.repositiory.UserPreferencesRepository
 import com.peachspot.liteum.data.repositiory.UserProfileData
-import com.peachspot.liteum.ui.screens.FeedItem // HomeScreen에서 정의한 FeedItem 임포트
+
 import com.peachspot.liteum.util.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -46,17 +47,23 @@ import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
 import com.kakao.sdk.user.UserApiClient
 import com.kakao.sdk.user.model.User // 카카오 User 모델 직접 사용을 위해
+import com.peachspot.liteum.data.db.BookLogs
+import com.peachspot.liteum.data.db.BookLogsDao
+import com.peachspot.liteum.data.model.FeedItem
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted // `feedItems` 선언에 사용
 import kotlinx.coroutines.flow.catch // `feedItems` 선언에 사용
 import kotlinx.coroutines.flow.onStart // `feedItems` 선언에 사용
 import kotlinx.coroutines.flow.stateIn // `feedItems` 선언에 사용
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 // DataStore 정의는 유지
 private val Application.dataStore by preferencesDataStore("secure_prefs")
 
 // AuthUiState에서 webViewAuthUrl 제거, isLoadingFeed 추가
 data class AuthUiState(
-    val isUserLoggedIn: Boolean = true, // 초기값 false 권장
+    val isUserLoggedIn: Boolean = false, // 초기값 false 권장
     val isLoading: Boolean = true, // 전체 앱 로딩 (사용자 정보 등)
     val isEnding: Boolean = false, // 앱 종료 과정
     val userMessage: String? = null,
@@ -77,7 +84,7 @@ class HomeViewModel(
     private val firebaseAuth: FirebaseAuth,
     private val credentialManager: CredentialManager,
     private val myApiService: MyApiService,
-    private val homeRepository: HomeRepository,
+    private val homeRepository: HomeRepository
 ) : ViewModel() {
 
     private val _loginResult = MutableStateFlow<Result<String>?>(null)
@@ -243,6 +250,7 @@ class HomeViewModel(
             }
 
             // 카카오 로그인 (Firebase 로그인 없으면)
+
             if (!loggedIn) {
                 val kakaoToken = loadKakaoIdToken()
                 if (!kakaoToken.isNullOrEmpty()) {
@@ -262,7 +270,7 @@ class HomeViewModel(
                                     userName = userName,
                                     userEmail = userEmail,
                                     userPhotoUrl = userPhotoUrl,
-                                    isLoading = false,
+                                    isLoading = false
                                     //webViewAuthUrl = if (loggedIn) "https://peachspot.co.kr/lkfAuth" else null
                                 )
                             }
@@ -271,18 +279,18 @@ class HomeViewModel(
                 }
             }
 
-            if (loggedIn) {
-                _uiState.update {
-                    it.copy(
-                        isUserLoggedIn = loggedIn,
-                        firebaseUid = firebaseUid,
-                        isLoading = false,
-                        //webViewAuthUrl = "https://peachspot.co.kr/lkfAuth"
-                    )
-                }
-            } else {
-                _uiState.update { it.copy(isLoading = false) }
-            }
+                        if (loggedIn) {
+                            _uiState.update {
+                                it.copy(
+                                    isUserLoggedIn = loggedIn,
+                                    firebaseUid = firebaseUid,
+                                    isLoading = false,
+                                    //webViewAuthUrl = "https://peachspot.co.kr/lkfAuth"
+                                )
+                            }
+                        } else {
+                            _uiState.update { it.copy(isLoading = false) }
+                        }
         }
     }
 
@@ -304,32 +312,68 @@ class HomeViewModel(
         if (error != null) {
             _loginResult.value = Result.failure(error)
             _uiState.update { it.copy(isLoading = false, userMessage = error.localizedMessage) }
-        } else if (idToken != null) {
-            viewModelScope.launch { saveKakaoIdToken(idToken) }
+            return
+        }
 
-            // 카카오 사용자 정보 가져오기
-            UserApiClient.instance.me { user, err ->
-                val kakaoUid = user?.id?.toString()
-                val userName = user?.kakaoAccount?.profile?.nickname
-                val userEmail = user?.kakaoAccount?.email
-                val userPhotoUrl = user?.kakaoAccount?.profile?.thumbnailImageUrl
+        // ID 토큰이 유효한 경우, 코루틴을 시작하여 비동기 작업 처리
+        idToken?.let { token ->
+            viewModelScope.launch {
+                try {
+                    // 1. 카카오 사용자 정보 비동기적으로 가져오기 (코루틴 사용)
+                    val user = suspendCancellableCoroutine<com.kakao.sdk.user.model.User> { continuation ->
+                        UserApiClient.instance.me { kakaoUser, err ->
+                            if (err != null) {
+                                continuation.resumeWith(Result.failure(err))
+                            } else if (kakaoUser != null) {
+                                continuation.resume(kakaoUser)
+                            } else {
+                                continuation.resumeWith(Result.failure(IllegalStateException("User information not available.")))
+                            }
+                        }
+                    }
 
-                _loginResult.value = Result.success(idToken)
-                _uiState.update {
-                    it.copy(
-                        isUserLoggedIn = true,
-                        kakaoUid = kakaoUid,
-                        userName = userName,
-                        userEmail = userEmail,
-                        userPhotoUrl = userPhotoUrl,
-                        isLoading = false,
-                    //    webViewAuthUrl = "https://peachspot.co.kr/lkfAuth"
-                    )
+                    // 2. Firebase Cloud Messaging(FCM) 토큰 비동기적으로 가져오기
+                    val fcmToken = FirebaseMessaging.getInstance().token.await()
+
+                    if (!fcmToken.isNullOrBlank()) {
+                        // 3. 사용자 등록 API 호출 (네트워크 에러 처리 추가)
+                        val kakaoUid = user.id?.toString()
+                        try {
+                            // TODO: API 호출의 응답을 확인하고 적절히 처리해야 함
+                            NetworkClient.myApiService.registerUser("", kakaoUid, fcmToken)
+                        } catch (e: Exception) {
+                            // API 호출 실패 시 에러 처리
+                            Log.e("KakaoLogin", "API call failed", e)
+                            _uiState.update { it.copy(userMessage = "사용자 등록에 실패했습니다.") }
+                        }
+                    }
+
+                    // 4. UI 상태 업데이트
+                    _loginResult.value = Result.success(token)
+                    _uiState.update {
+                        it.copy(
+                            isUserLoggedIn = true,
+                            kakaoUid = user.id?.toString(),
+                            userName = user.kakaoAccount?.profile?.nickname,
+                            userEmail = user.kakaoAccount?.email,
+                            userPhotoUrl = user.kakaoAccount?.profile?.thumbnailImageUrl,
+                            isLoading = false,
+                            userMessage = null // 성공했으므로 메시지 초기화
+                        )
+                    }
+
+                    // 5. ID 토큰 저장
+                    saveKakaoIdToken(token)
+
+                } catch (e: Exception) {
+                    // 상위 레벨에서 발생하는 모든 예외 처리
+                    Log.e("KakaoLogin", "Login process failed", e)
+                    _loginResult.value = Result.failure(e)
+                    _uiState.update { it.copy(isLoading = false, userMessage = e.localizedMessage) }
                 }
             }
         }
     }
-
     private suspend fun saveKakaoIdToken(token: String) {
         val encrypted = aead.encrypt(token.toByteArray(), null)
         application.dataStore.edit { prefs ->
@@ -417,7 +461,7 @@ class HomeViewModel(
             val fcmToken = FirebaseMessaging.getInstance().token.await()
             val uid = firebaseAuth.currentUser?.uid ?: ""
             if (!fcmToken.isNullOrBlank()) {
-                NetworkClient.myApiService.registerUser(uid, fcmToken)
+                NetworkClient.myApiService.registerUser(uid, "",fcmToken)
             }
         } catch (e: Exception) {
             Logger.e("AuthViewModel", "Firebase Auth failed", e)
@@ -528,5 +572,30 @@ class HomeViewModel(
     override fun onCleared() {
         super.onCleared()
         Logger.d("HomeViewModel", "onCleared")
+    }
+
+    fun getBookLogById(id: Long): Flow<BookLogs?> {
+        return homeRepository.getBookLogById(id)
+    }
+
+    /**
+     * BookLog를 업데이트하는 메서드
+     */
+    fun updateBookLog(bookLog: BookLogs) {
+        viewModelScope.launch {
+            try {
+                val result = homeRepository.updateBookLog(bookLog)
+                if (result > 0) {
+                    // 업데이트 성공
+                    Log.d("HomeViewModel", "BookLog updated successfully")
+                } else {
+                    // 업데이트 실패
+                    Log.w("HomeViewModel", "BookLog update failed - no matching ID")
+                }
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Error updating BookLog", e)
+                // 에러 처리
+            }
+        }
     }
 }

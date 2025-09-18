@@ -1,108 +1,65 @@
 package com.peachspot.liteum.ui.components
 
-
-
-//import androidx.compose.ui.graphics.Color // 직접 색상 지정 대신 MaterialTheme 사용 권장
-import android.view.SoundEffectConstants
-import androidx.compose.foundation.layout.Row
-
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-
-import androidx.compose.foundation.layout.Arrangement // 추가
-import androidx.compose.foundation.layout.fillMaxWidth // 추가
-
-// ... 다른 import 문들
+import com.peachspot.liteum.R // R 경로 확인 필요
+import com.peachspot.liteum.ui.screens.ViewMode
+import androidx.navigation.NavController // NavController import 추가
 
 // ...
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyAppTopBar(
-    title: String = "",
-    onNotificationClick: () -> Unit = {},
-    onTitleClick: () -> Unit,
-    onZoomInClick: () -> Unit,    // 확대 버튼 콜백 추가
-    onZoomOutClick: () -> Unit,   // 축소 버튼 콜백 추가
-    onMenuClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
-) {
-    val view = LocalView.current
+fun TopAppBar(
+    currentViewMode: ViewMode,             // 매개변수 추가
+    onViewModeChange: (ViewMode) -> Unit,
+    onCameraClick: () -> Unit,
+    onDmClick: () -> Unit,
+    onMenuClick: (() -> Unit)?,
 
+) {
     TopAppBar(
         title = {
-            Row(
-                modifier = Modifier.fillMaxWidth(), // 사용 가능한 전체 너비를 채우도록 설정
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center // 가로 방향으로 가운데 정렬
-            ) {
-                TextButton(onClick = onZoomInClick) {
-                    Text(
-                        text = "화면 확대",
-                        color = Color.White
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(2.dp)) // 버튼 사이 간격 추가 (원하는 크기로 조절)
-                Text("/")
-                Spacer(modifier = Modifier.width(2.dp)) // 버튼 사이 간격 추가 (원하는 크기로 조절)
-
-                TextButton(onClick = onZoomOutClick) {
-                    Text(
-                        text = "축소",
-                        color = Color.White
-                    )
-                }
-            }
+            // 앱 로고 등을 여기에 추가할 수 있습니다.
+            // Text(stringResource(R.string.app_name))
         },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color(0xFF2F2F2F).copy(alpha = 0.5f),
-            titleContentColor = Color.White
-        ),
         navigationIcon = {
-            if (onMenuClick != null) {
-                // IconButton의 기본 패딩을 줄이려면 contentPadding을 조절할 수 있습니다.
-                // 또는 Modifier.size를 사용하여 아이콘 버튼 자체의 크기를 조절할 수도 있습니다.
-                IconButton(onClick = onMenuClick) {
-                    Icon(Icons.Default.Menu, contentDescription = "메뉴", tint = Color.White)
+            onMenuClick?.let { clickAction ->
+                IconButton(onClick = clickAction) {
+                    Icon(Icons.Filled.Menu, contentDescription = "메뉴")
                 }
             }
         },
         actions = {
-            // IconButton의 기본 패딩을 줄이려면 contentPadding을 조절할 수 있습니다.
-            IconButton(
-                onClick = {
-                    view.playSoundEffect(SoundEffectConstants.CLICK)
-                    onNotificationClick()
-                },
-                modifier = Modifier.fillMaxHeight() // fillMaxHeight()는 유지하거나 필요에 따라 조절
-            ) {
+            IconButton(onClick = {
+                val newMode  = if (currentViewMode == ViewMode.LIST) ViewMode.GRID else ViewMode.LIST
+                onViewModeChange(newMode)
+            }) {
                 Icon(
-                    imageVector = Icons.Default.Notifications,
-                    contentDescription = "알림",
-                    tint = Color.White
+                if (currentViewMode == ViewMode.LIST) painterResource(id = R.drawable.ic_grid) else painterResource(id = R.drawable.ic_list), // 적절한 아이콘 사용
+                    contentDescription = "뷰 모드 변경",
+                    modifier = Modifier.size(24.dp)
                 )
             }
+
+            IconButton(onClick = onCameraClick) { // onCameraClick을 직접 호출
+                Icon(Icons.Filled.Add, contentDescription = "새 게시물")
+            }
+
         },
-        modifier = modifier.height(80.dp)
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            actionIconContentColor = MaterialTheme.colorScheme.onSurface
+        )
     )
 }
-
+    

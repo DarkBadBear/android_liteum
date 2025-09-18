@@ -126,7 +126,7 @@ fun LoginScreen(
             Text(
                 text = "서비스를 이용하려면 로그인해주세요.",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFFFFD700) // 금색
+                //color = Color(0xFFFFD700) // 금색
             )
 
             Spacer(modifier = Modifier.height(10.dp))

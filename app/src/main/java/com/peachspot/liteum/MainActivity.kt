@@ -173,17 +173,18 @@ class MainActivity : ComponentActivity() {
                         firebase,
                         myApiService,
                         repository
+
                     )
                 }
                 val homeViewModel: HomeViewModel = viewModel(factory = viewModelFactory)
 
-                // 백그라운드에서 돌아왔을 때 웹뷰 새로고침 트리거
-                LaunchedEffect(wasInBackground) {
-                    if (wasInBackground) {
-                        //homeViewModel.refreshWebViewsAfterBackground()
-                        wasInBackground = false
-                    }
-                }
+//                // 백그라운드에서 돌아왔을 때 웹뷰 새로고침 트리거
+//                LaunchedEffect(wasInBackground) {
+//                    if (wasInBackground) {
+//                        //homeViewModel.refreshWebViewsAfterBackground()
+//                        wasInBackground = false
+//                    }
+//                }
 
                 MainScreen(
                     navController = navController,
@@ -206,7 +207,6 @@ class MainActivity : ComponentActivity() {
                         showServiceStoppedDialogState=true
                     } else {
                         checkAppVersion()
-                        registerAppToken()
                     }
                 }
 
@@ -419,32 +419,8 @@ class MainActivity : ComponentActivity() {
             }
     }
 
-    private fun registerAppToken() {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: "no_user"
 
-        FirebaseMessaging.getInstance().getToken()
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    val token = task.result
-                    send_token_with_uid(token, uid)
-                } else {
-                    Log.e("MainActivity", "FCM 토큰 가져오기 실패", task.exception)
-                }
-            }
-    }
 
-    private fun send_token_with_uid(token: String?, uid: String) {
-        if (token.isNullOrEmpty()) return
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val data = mapOf("token" to token, "uid" to uid)
-                val response = myApiService.registerUser(uid,token)
-            } catch (e: Exception) {
-                Log.e("Main", "Exception while sending token to server.", e)
-            }
-        }
-    }
 
     private fun checkAppVersion() {
         val remoteConfig = Firebase.remoteConfig

@@ -1,33 +1,28 @@
 package com.peachspot.liteum.ui.screens
 
+// 필요한 import문들 (분리된 컴포저블, ViewModel, 데이터 클래스 등)
 import android.app.Application
-// import android.content.Intent // 현재 코드에서 직접 사용하지 않음
-// import android.net.Uri // 현재 코드에서 직접 사용하지 않음
+import android.content.Intent
+import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Add
-
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.MoreVert
-
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -35,62 +30,90 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.credentials.CredentialManager
-
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import coil.compose.AsyncImage
-import com.google.ai.client.generativeai.Chat
-import com.google.firebase.auth.FirebaseAuth
 import com.peachspot.liteum.R
-import com.peachspot.liteum.data.db.NotificationEntity
-import com.peachspot.liteum.viewmodel.AuthUiState // ViewModel의 uiState를 사용하기 위해
+import com.peachspot.liteum.data.db.NotificationEntity // NotificationEntity 경로에 맞게 수정 필요
+import com.peachspot.liteum.data.model.FeedItem // 분리된 FeedItem 사용
+import com.peachspot.liteum.data.model.BookReview // 분리된 BookReview 사용
+import com.peachspot.liteum.ui.components.AppBottomNavigationBar
+import com.peachspot.liteum.ui.components.BookGridFeed
+import com.peachspot.liteum.ui.components.FeedList
+import com.peachspot.liteum.ui.components.TopAppBar
+import com.peachspot.liteum.ui.components.NotificationItem
 import com.peachspot.liteum.viewmodel.HomeViewModel
 import com.peachspot.liteum.viewmodel.NotificationViewModel
 import com.peachspot.liteum.viewmodel.NotificationViewModelFactory
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-// import com.peachspot.liteum.util.Logger // Logger는 필요에 따라 사용
 
 
-// --- 데이터 클래스 정의 ---
-data class BookReview(
-    val id: String,
-    val reviewerName: String,
-    val reviewText: String,
-    val rating: Float // 0.0 ~ 5.0
-)
 
-data class FeedItem(
-    val id: String,
-    val userName: String,
-    val userProfileImageUrl: String?,
-    val postImageUrl: String, // 책 표지 이미지 URL
-    val bookTitle: String, // 책 제목
-    val caption: String,
-    val likes: Int,
-    val comments: Int,
-    val timestamp: Long,
-    val reviews: List<BookReview> = emptyList() // 해당 책의 리뷰 목록
-)
+// HomeScreen.kt 또는 Preview들을 모아두는 별도의 파일
 
-// --- Composable 함수들 ---
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column // Column 추가
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Menu // 예시 아이콘
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.ExperimentalMaterial3Api // 추가
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar // TopAppBar import
+import androidx.compose.material3.TopAppBarDefaults // TopAppBarDefaults import
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue // getValue, mutableStateOf, remember, setValue 추가
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp // dp import
+import androidx.compose.ui.window.Dialog
+import androidx.navigation.compose.rememberNavController // rememberNavController는 이미 있었음
+import com.peachspot.liteum.ui.components.AppBottomNavigationBar
+import com.peachspot.liteum.ui.components.ReviewPreviewDialog
+
+
+enum class BottomNavItem(
+    val label: String,
+    val icon: @Composable () -> Painter // Painter를 반환하는 Composable 함수로 변경
+) {
+    Home(
+        label = "나의 책장",
+        icon = { painterResource(id = R.drawable.ic_book) } // 예시: ic_home 드로어블 사용
+    ),
+    Street(
+        label = "북 이음",
+        icon = { painterResource(id = R.drawable.ic_link) } // 예시: ic_street 드로어블 사용
+    ),
+    Profile(
+        label = "프로필",
+        icon = { painterResource(id = R.drawable.ic_profile) } // 예시: ic_profile 드로어블 사용
+    )
+    // 필요에 따라 더 많은 아이템 추가
+}
+
+enum class ViewMode {
+    LIST, GRID
+}
+
+enum class PreviewViewMode { LIST, GRID } // Preview용으로 간단히 정의하거나 실제 ViewMode import
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,19 +122,92 @@ fun HomeScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
 ) {
+
+    var currentViewMode by remember { mutableStateOf(ViewMode.LIST) } // 기본값은 리스트 뷰
+
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val context = LocalContext.current // 현재 컨텍스트
     val leftDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val rightDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var expanded by remember { mutableStateOf(false) } // 계정 관리 드롭다운용
-
+    var showFeedItemDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     val application = LocalContext.current.applicationContext as Application
     val notificationViewModel: NotificationViewModel = viewModel(
         factory = NotificationViewModelFactory(application)
     )
     val notifications by notificationViewModel.notifications.collectAsState()
+    var selectedBottomNavItem by remember { mutableStateOf(BottomNavItem.Home) } // BottomNavItem 사용
+
+
+    // LazyColumn의 스크롤 상태를 위한 State
+    val listState = rememberLazyListState()
+
+    // 하단 바 표시 여부를 위한 State
+    var isBottomBarVisible by remember { mutableStateOf(true) }
+
+    // 이전 스크롤 오프셋을 저장하기 위한 변수 (스크롤 방향 감지용)
+    var previousScrollOffset by remember { mutableStateOf(0) }
+
+    // 스크롤 위치를 기반으로 하단 바 표시 여부 결정
+    // derivedStateOf를 사용하면 listState.firstVisibleItemScrollOffset이 변경될 때만 재계산됩니다.
+
+    val shouldShowBottomBar by remember {
+        derivedStateOf {
+            // 가장 간단한 방법: 첫 아이템이 완벽히 보이면 항상 표시
+            // 또는 스크롤이 멈췄을 때 표시 등 다양한 로직 구현 가능
+            // 여기서는 스크롤 방향에 따라 결정하는 로직을 추가합니다.
+            val currentOffset = listState.firstVisibleItemScrollOffset
+            val firstVisibleItemIndex = listState.firstVisibleItemIndex
+
+            // 첫 아이템이 보이거나, 스크롤을 위로 올렸을 때
+            if (firstVisibleItemIndex == 0 && currentOffset == 0) {
+                true // 맨 위에서는 항상 표시
+            } else if (currentOffset > previousScrollOffset) {
+                false // 아래로 스크롤 중이면 숨김
+            } else if (currentOffset < previousScrollOffset) {
+                true // 위로 스크롤 중이면 표시
+            } else {
+
+                isBottomBarVisible // 스크롤이 멈췄으면 이전 상태 유지 (또는 true로 설정)
+            }
+        }
+    }
+
+  var  selectedFeedItemForDialog by remember { mutableStateOf<FeedItem?>(null) }
+    var reviewForDialog by remember { mutableStateOf<BookReview?>(null) } // 다이얼로그에 표시할 특정 리뷰
+
+    // 다이얼로그를 띄우는 공통 함수
+    fun openDialogWithFeedItem(feedItem: FeedItem, specificReview: BookReview?) {
+        selectedFeedItemForDialog = feedItem
+        reviewForDialog = specificReview // 특정 리뷰가 있으면 사용, 없으면 null
+        showFeedItemDialog = true
+    }
+
+    // 다이얼로그를 띄우는 함수 (리뷰가 필수인 경우, 없으면 Snackbar)
+    fun openDialogRequiringReview(feedItem: FeedItem) {
+        val targetReview = feedItem.reviews.firstOrNull() // 예시: 첫 번째 리뷰를 대상으로 함
+        if (targetReview != null) {
+            openDialogWithFeedItem(feedItem, targetReview)
+        } else {
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    message = "${feedItem.bookTitle}에는 표시할 리뷰가 없습니다.",
+                    duration = SnackbarDuration.Short
+                )
+            }
+        }
+    }
+
+    // shouldShowBottomBar 값이 변경될 때 isBottomBarVisible 상태를 업데이트
+    // 그리고 previousScrollOffset 업데이트
+    LaunchedEffect(shouldShowBottomBar, listState.firstVisibleItemScrollOffset) {
+        Log.d("ScrollDebug", "Effect triggered. shouldShow: $shouldShowBottomBar, currentOffset: ${listState.firstVisibleItemScrollOffset}, prevOffset: $previousScrollOffset")
+        isBottomBarVisible = shouldShowBottomBar
+        previousScrollOffset = listState.firstVisibleItemScrollOffset
+        Log.d("ScrollDebug", "isBottomBarVisible set to: $isBottomBarVisible, previousScrollOffset set to: $previousScrollOffset")
+    }
 
     LaunchedEffect(uiState.userMessage) {
         uiState.userMessage?.let { message ->
@@ -149,45 +245,86 @@ fun HomeScreen(
                     onClick = { scope.launch { leftDrawerState.close() } },
                     modifier = Modifier.align(Alignment.CenterEnd)
                 ) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = "닫기")
+                    Icon(imageVector = Icons.Default.Close, contentDescription = "닫기",    tint = MaterialTheme.colorScheme.onSurface)
                 }
             }
             Spacer(Modifier.height(10.dp))
             Image(
-                painter = painterResource(id = R.drawable.round_liteum), // 앱 로고 또는 사용자 프로필
+                painter = painterResource(id = R.drawable.round_liteum),
                 contentDescription = "App Logo",
                 modifier = Modifier
                     .size(100.dp)
                     .clip(CircleShape)
             )
             Spacer(Modifier.height(16.dp))
-            Text(uiState.userName ?: "사용자 이름", style = MaterialTheme.typography.titleMedium)
-            Text(uiState.userEmail ?: "", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text(uiState.userName ?: "사용자 이름", style = MaterialTheme.typography.titleMedium,color=MaterialTheme.colorScheme.primary)
+
 
             Spacer(Modifier.height(24.dp))
-            TextButton(onClick = { /* 설정 화면으로 이동 */ }) { Text("설정") }
-            TextButton(onClick = { /* 저장된 항목 화면으로 이동 */ }) { Text("저장됨") }
-            TextButton(onClick = {
-                scope.launch {
-                    leftDrawerState.close()
-                    viewModel.logOut()
-                }
-            }) { Text("로그아웃") }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(24.dp))
+
+            Button(
+                onClick = {
+                    scope.launch {
+                        leftDrawerState.close()
+                        val url = "https://peachspot.co.kr/blog/detail?no=2"
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFefefef),
+                    contentColor = Color.Black
+                ),
+                modifier = Modifier.width(200.dp) // 원하는 너비로 설정
+            ) { Text("웹사이트") }
+
+            Spacer(Modifier.height(24.dp))
+            Button(
+                onClick = {
+                    scope.launch {
+                        leftDrawerState.close()
+                        val url = "https://peachspot.co.kr/privacy?no=2"
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFefefef),
+                    contentColor = Color.Black
+                ),  modifier = Modifier.width(200.dp) // 원하는 너비로 설정
+            ) { Text("개인정보취급방침") }
+
+            Spacer(Modifier.height(24.dp))
+            Button(
+                onClick = {
+                    scope.launch {
+                        leftDrawerState.close()
+                        viewModel.logOut() // <- 상태 변경만 수행
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFefefef),
+                    contentColor = Color.Black
+                ),
+                modifier = Modifier.width(200.dp) // 원하는 너비로 설정
+            ) { Text("로그아웃") }
+
+            Spacer(Modifier.height(24.dp))
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Button(
                         onClick = { expanded = true },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            containerColor = Color(0xFFefefef),
+                            contentColor = Color.Black
                         ),
+                        modifier = Modifier.width(200.dp) // 원하는 너비로 설정
                     ) { Text("계정 관리") }
+
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         DropdownMenuItem(text = { Text("계정 삭제") }, onClick = {
                             expanded = false
-                            viewModel.signOut()
+                            // 계정 삭제 처리
                         })
                     }
                 }
@@ -197,7 +334,7 @@ fun HomeScreen(
                 text = "Powered by Peachspot",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(top=16.dp,bottom = 16.dp)
             )
         }
     }
@@ -239,7 +376,7 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(notifications, key = { it.id }) { notification ->
-                        NotificationItem(notification = notification)
+                        NotificationItem(notification = notification) // 분리된 컴포저블 사용
                     }
                 }
             }
@@ -260,8 +397,14 @@ fun HomeScreen(
                 containerColor = MaterialTheme.colorScheme.background,
                 snackbarHost = { SnackbarHost(snackbarHostState) },
                 topBar = {
-                    InstagramTopAppBar(
-                        onCameraClick = { /* TODO: 카메라 실행 로직 */ },
+                    TopAppBar( // 분리된 컴포저블 사용
+                        currentViewMode = currentViewMode, // 현재 뷰 모드 전달
+                        onViewModeChange = { newMode -> // 뷰 모드 변경을 위한 콜백 전달
+                            currentViewMode = newMode
+                        },
+                        onCameraClick = {
+                            navController.navigate("review") // 여기서 네비게이션 실행
+                        },
                         onDmClick = {
                             scope.launch {
                                 if (rightDrawerState.isClosed) rightDrawerState.open()
@@ -272,7 +415,42 @@ fun HomeScreen(
                             { scope.launch { if (leftDrawerState.isClosed) leftDrawerState.open() else leftDrawerState.close() } }
                         } else null
                     )
-                },
+                         },
+                bottomBar = {
+                    AnimatedVisibility(
+                        visible = isBottomBarVisible,
+                        enter = slideInVertically(
+                            // initialOffsetY는 컴포저블이 화면 밖에서 시작하여 안으로 들어올 때의 시작점입니다.
+                            // 양수 값은 컴포저블의 아래쪽을 의미합니다.
+                            // 따라서, 컴포저블 높이만큼 아래에서 시작하면 완전히 화면 밖에 있게 됩니다.
+                            // 절반만 움직이게 하려면, 컴포저블 높이의 절반만큼만 오프셋을 줍니다.
+                            initialOffsetY = { fullHeight -> fullHeight }, // 시작: 완전히 화면 아래
+                            animationSpec = tween(
+                                durationMillis = 300, // 애니메이션 지속 시간 (밀리초)
+                                easing = androidx.compose.animation.core.FastOutSlowInEasing // 부드러운 가속/감속
+                            )
+                        ),
+                        exit = slideOutVertically(
+                            // targetOffsetY는 컴포저블이 화면 안에서 밖으로 나갈 때의 목표점입니다.
+                            // 양수 값은 컴포저블의 아래쪽을 의미합니다.
+                            targetOffsetY = { fullHeight -> fullHeight }, // 종료: 완전히 화면 아래
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = androidx.compose.animation.core.FastOutLinearInEasing // 사라질 때는 약간 더 빠르게
+                            )
+                        )
+                    ) {
+                        // 이 AppBottomNavigationBar가 차지하는 높이가 fullHeight가 됩니다.
+                        AppBottomNavigationBar(
+                            selectedItem = selectedBottomNavItem,
+                            onItemSelected = { item ->
+                                selectedBottomNavItem = item
+                                // TODO: 네비게이션 로직
+                            }
+                        )
+                    }
+                }
+
             ) { innerPadding ->
                 // --- 샘플 피드 데이터 ---
                 val feedItems = remember {
@@ -284,8 +462,8 @@ fun HomeScreen(
                             "첫 번째 게시물입니다! 이 책 정말 좋아요. #일상 #책추천", 120, 15,
                             System.currentTimeMillis() - 100000,
                             reviews = listOf(
-                                BookReview("r1_1", "독서광1", "정말 감명 깊게 읽었습니다. 삶의 태도를 바꾸는 계기가 되었어요.", 4.5f),
-                                BookReview("r1_2", "책벌레", "내용이 조금 어렵긴 했지만, 곱씹을수록 좋은 책입니다.", 4.0f)
+                                BookReview("1", "1234","독서광1", "정말 감명 깊게 읽었습니다. 삶의 태도를 바꾸는 계기가 되었어요.", 4.5f,""),
+
                             )
                         ),
                         FeedItem(
@@ -295,7 +473,7 @@ fun HomeScreen(
                             "파이썬 입문용으로 최고! #코딩 #개발", 250, 30,
                             System.currentTimeMillis() - 200000,
                             reviews = listOf(
-                                BookReview("r2_1", "개발자지망생", "쉽고 재미있게 설명해줘서 좋았습니다. 추천!", 5.0f)
+                                BookReview("1","123", "개발자지망생", "쉽고 재미있게 설명해줘서 좋았습니다. 추천!", 5.0f,"")
                             )
                         ),
                         FeedItem(
@@ -309,360 +487,86 @@ fun HomeScreen(
                     )
                 }
 
-                FeedList(
-                    feedItems = feedItems,
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .fillMaxSize()
-                )
-            }
-        }
-    }
-}
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun InstagramTopAppBar(
-    onCameraClick: () -> Unit,
-    onDmClick: () -> Unit,
-    onMenuClick: (() -> Unit)?
-) {
-    TopAppBar(
-        title = {
-            Image(
-                painter = painterResource(id = R.drawable.round_liteum), // 앱 로고로 변경
-                contentDescription = stringResource(R.string.app_name),
-                modifier = Modifier.height(30.dp)
-            )
-        },
-        navigationIcon = {
-            onMenuClick?.let { clickAction ->
-                IconButton(onClick = clickAction) {
-                    Icon(Icons.Filled.AccountCircle, contentDescription = "메뉴")
-                }
-            }
-        },
-        actions = {
-            IconButton(onClick = onCameraClick) {
-                Icon(Icons.Filled.Add, contentDescription = "새 게시물")
-            }
-            IconButton(onClick = onDmClick) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "DM")
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-            actionIconContentColor = MaterialTheme.colorScheme.onSurface
-        )
-    )
-}
-
-@Composable
-fun FeedList(
-    feedItems: List<FeedItem>,
-    modifier: Modifier = Modifier
-) {
-    LazyColumn(
-        modifier = modifier,
-        contentPadding = PaddingValues(vertical = 8.dp)
-    ) {
-        items(feedItems, key = { it.id }) { feedItem ->
-            FeedPostItem(feedItem = feedItem)
-            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-        }
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
-@Composable
-fun FeedPostItem(feedItem: FeedItem, modifier: Modifier = Modifier) {
-    val pagerState = rememberPagerState(pageCount = { 2 }) // 0: 책 이미지, 1: 리뷰 목록
-    val scope = rememberCoroutineScope()
-
-    Column(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AsyncImage(
-                model = feedItem.userProfileImageUrl ?: R.drawable.default_profile_placeholder,
-                contentDescription = "${feedItem.userName} 프로필 사진",
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(Color.LightGray),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = feedItem.userName,
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                modifier = Modifier.weight(1f)
-            )
-            IconButton(onClick = { /* TODO: 더보기 메뉴 */ }) {
-                Icon(Icons.Filled.MoreVert, contentDescription = "더보기")
-            }
-        }
-
-        Column {
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-            ) { page ->
-                when (page) {
-                    0 -> {
-                        AsyncImage(
-                            model = feedItem.postImageUrl,
-                            contentDescription = "${feedItem.bookTitle} 표지",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
+                when (currentViewMode) {
+                    ViewMode.LIST -> {
+                        FeedList(
+                            feedItems = feedItems,
+                            modifier = Modifier.padding(innerPadding).fillMaxSize(),
+                            listState = listState,
+                            onItemClick = { clickedFeedItem ->
+                                openDialogRequiringReview(clickedFeedItem)
+                            },
+//                            onOpenDialogRequest = { feedItem, review ->
+//                                openDialogWithFeedItem(feedItem, review)
+//                            },
+//                            onDeleteActionFromItemMenu = { feedId, reviewId ->
+//                                // viewModel.deleteReview(feedId, reviewId) // ViewModel 호출
+//                                println("삭제 요청 (List Item Menu): Feed ID - $feedId, Review ID - $reviewId")
+//                                scope.launch {
+//                                    snackbarHostState.showSnackbar("리뷰가 삭제되었습니다. (ViewModel 연동 필요)")
+//                                }
+//                            }
+                            // navControllerForFeedItem = navController // 필요시 FeedList에 전달
                         )
                     }
-                    1 -> {
-                        ReviewList(
-                            bookTitle = feedItem.bookTitle,
-                            reviews = feedItem.reviews,
-                            modifier = Modifier.fillMaxSize()
+                    ViewMode.GRID -> {
+                        BookGridFeed(
+                            feedItems = feedItems,
+                            onItemClick = { clickedFeedItem ->
+                                openDialogRequiringReview(clickedFeedItem)
+                            },
+                            modifier = Modifier.padding(innerPadding).fillMaxSize()
                         )
                     }
                 }
-            }
 
-            TabRow(
-                selectedTabIndex = pagerState.currentPage,
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                contentColor = MaterialTheme.colorScheme.primary,
-                indicator = { tabPositions ->
-                    TabRowDefaults.SecondaryIndicator(
-                        Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
-                        color = MaterialTheme.colorScheme.primary
+                // --- 공통으로 사용할 다이얼로그 ---
+                if (showFeedItemDialog && selectedFeedItemForDialog != null && reviewForDialog != null) {
+                    ReviewPreviewDialog(
+                        feedItem = selectedFeedItemForDialog!!,
+                        review = reviewForDialog!!,
+                        onDismissRequest = {
+                            showFeedItemDialog = false
+                            // 상태 초기화
+                            selectedFeedItemForDialog = null
+                            reviewForDialog = null
+                        },
+                        onEditClick = {
+                            showFeedItemDialog = false
+
+                            reviewForDialog?.let { review ->
+                                navController.navigate("review_edit/${review.id}")
+                            }
+                            selectedFeedItemForDialog = null
+                            reviewForDialog = null
+                        },
+                        onDeleteClick = {
+                            showFeedItemDialog = false
+                            // viewModel.deleteReview(selectedFeedItemForDialog!!.id, reviewForDialog!!.id) // ViewModel 호출
+                            println("삭제 요청 (Dialog): Feed ID - ${selectedFeedItemForDialog!!.id}, Review ID - ${reviewForDialog!!.id}")
+                            scope.launch {
+                                snackbarHostState.showSnackbar("리뷰가 삭제되었습니다. (ViewModel 연동 필요)")
+                            }
+                            selectedFeedItemForDialog = null
+                            reviewForDialog = null
+                        }
                     )
-                }
-            ) {
-                Tab(
-                    selected = pagerState.currentPage == 0,
-                    onClick = { scope.launch { pagerState.animateScrollToPage(0) } },
-                    text = { Text("책 표지") }
-                )
-                Tab(
-                    selected = pagerState.currentPage == 1,
-                    onClick = { scope.launch { pagerState.animateScrollToPage(1) } },
-                    text = { Text("리뷰 (${feedItem.reviews.size})") }
-                )
-            }
-        }
+                } else if (showFeedItemDialog && selectedFeedItemForDialog != null && reviewForDialog == null) {
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = { /* TODO: 좋아요 */ }) {
-                Icon(Icons.Filled.FavoriteBorder, contentDescription = "좋아요")
-            }
-            IconButton(onClick = { /* TODO: 댓글 */ }) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_message),
-                    contentDescription = "댓글"
-                )
-
-            }
-
-            IconButton(onClick = { /* TODO: 공유 */ }) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "공유")
-            }
-            Spacer(modifier = Modifier.weight(1f))
-        }
-
-        Text(
-            text = "좋아요 ${feedItem.likes}개",
-            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-            modifier = Modifier.padding(horizontal = 12.dp)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Row(modifier = Modifier.padding(horizontal = 12.dp)) {
-            Text(
-                text = feedItem.userName,
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = feedItem.caption,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-
-        if (feedItem.comments > 0) {
-            Text(
-                text = "댓글 ${feedItem.comments}개 모두 보기",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray,
-                modifier = Modifier.padding(horizontal = 12.dp)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-        }
-
-        Text(
-            text = formatTimestamp(feedItem.timestamp),
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.Gray,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-        )
-    }
-}
-
-@Composable
-fun ReviewList(bookTitle: String, reviews: List<BookReview>, modifier: Modifier = Modifier) {
-    Column(modifier = modifier.background(MaterialTheme.colorScheme.surface)) {
-        Text(
-            text = "\"${bookTitle}\" 리뷰",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                .padding(12.dp)
-        )
-        Divider()
-        if (reviews.isEmpty()) {
-            Box(Modifier
-                .fillMaxSize()
-                .padding(16.dp), contentAlignment = Alignment.Center) {
-                Text("아직 작성된 리뷰가 없습니다.")
-            }
-        } else {
-            LazyColumn(
-                contentPadding = PaddingValues(12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(reviews, key = { it.id }) { review ->
-                    BookReviewItem(review)
+                    LaunchedEffect(selectedFeedItemForDialog) {
+                        if(showFeedItemDialog) { // 다이얼로그를 닫기 전에 Snackbar 표시
+                            scope.launch {
+                                snackbarHostState.showSnackbar("${selectedFeedItemForDialog?.bookTitle}에는 표시할 리뷰가 없습니다.")
+                            }
+                            showFeedItemDialog = false // 다이얼로그 닫기
+                            selectedFeedItemForDialog = null
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-@Composable
-fun BookReviewItem(review: BookReview, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest)
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = review.reviewerName,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "⭐️ ${"%.1f".format(review.rating)}", // 실제 별 아이콘 사용 권장
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.tertiary
-                )
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = review.reviewText,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 5,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
 
-fun formatTimestamp(timestamp: Long): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp
-    val seconds = diff / 1000
-    val minutes = seconds / 60
-    val hours = minutes / 60
-    val days = hours / 24
-    return when {
-        days > 0 -> "${days}일 전"
-        hours > 0 -> "${hours}시간 전"
-        minutes > 0 -> "${minutes}분 전"
-        else -> "${seconds}초 전"
-    }
-}
-
-@Composable
-fun NotificationItem(notification: NotificationEntity, modifier: Modifier = Modifier) {
-    val dateFormat = remember { SimpleDateFormat("yyyy.MM.dd HH:mm", Locale.getDefault()) }
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-    ) {
-        Column(modifier = Modifier
-            .padding(16.dp)
-            .fillMaxWidth()) {
-            notification.imgUrl?.takeIf { it.isNotBlank() }?.let { imageUrl ->
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = notification.title ?: "알림 이미지",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(16f / 9f)
-                        .clip(RoundedCornerShape(8.dp))
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-            notification.title?.let { title ->
-                Text(text = title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Spacer(modifier = Modifier.height(4.dp))
-            }
-            notification.body?.let { body ->
-                Text(text = body, style = MaterialTheme.typography.bodyMedium)
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-            Text(text = dateFormat.format(Date(notification.receivedTimeMillis)), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
-
-// --- Preview 코드 ---
-@Preview(showBackground = true, widthDp = 360, heightDp = 1000)@Composable
-fun HomeScreenPreview() {
-    val context = LocalContext.current
-}
-    @Composable
-    fun FeedPostItemPreview() {
-        MaterialTheme {
-            FeedPostItem(
-                feedItem = FeedItem(
-                    id = "preview1",
-                    userName = "instagram_user",
-                    userProfileImageUrl = "https://picsum.photos/seed/preview_profile/100/100",
-                    postImageUrl = "https://picsum.photos/seed/preview_post/600/600",
-                    bookTitle = "미리보기 책 제목",
-                    caption = "이것은 미리보기용 게시물입니다. #Compose #AndroidDev",
-                    likes = 1052,
-                    comments = 37,
-                    timestamp = System.currentTimeMillis() - 3600000, // 1시간 전
-                    reviews = listOf(
-                        BookReview("r_prev1", "리뷰어1", "아주 좋은 책입니다. 내용이 알차요!", 5.0f),
-                        BookReview("r_prev2", "리뷰어2", "읽어볼 만합니다.", 4.0f)
-                    )
-                )
-            )
-        }
-    }
-
-
-// drawable에 instagram_logo_text.xml (또는 round_liteum.xml) 및 default_profile_placeholder.xml 필요

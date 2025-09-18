@@ -116,6 +116,7 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.generativeai)
     implementation(libs.androidx.datastore.core)
+    implementation(libs.books)
     kapt(libs.hilt.compiler)
     implementation(libs.javax.inject)
 

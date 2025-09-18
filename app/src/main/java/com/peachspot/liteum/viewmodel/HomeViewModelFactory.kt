@@ -5,6 +5,7 @@ import androidx.credentials.CredentialManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.google.firebase.auth.FirebaseAuth
+import com.peachspot.liteum.data.db.BookLogsDao
 import com.peachspot.liteum.data.remote.api.MyApiService
 import com.peachspot.liteum.data.repositiory.HomeRepository
 import com.peachspot.liteum.data.repositiory.UserPreferencesRepository
@@ -17,6 +18,7 @@ class HomeViewModelFactory(
     private val firebaseAuth: FirebaseAuth,
     private val myApiService: MyApiService,
     private val homeRepository: HomeRepository,
+
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -29,6 +31,7 @@ class HomeViewModelFactory(
                 credentialManager,
                 myApiService,
                 homeRepository,
+
 
             ) as T
             Logger.d("ProfileVMFactory", "ProfileViewModel instance created: $viewModel")

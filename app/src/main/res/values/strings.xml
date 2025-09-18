@@ -39,4 +39,7 @@
     <string name="label_tap_to_add_image">사진 추가</string>
     <string name="button_confirm">확인</string>
     <string name="button_cancel">취소</string>
+    <string name="rating_score">별점</string>
+    <string name="button_gallery">갤러리</string>
+    <string name="button_camera">촬영</string>
 </resources>

@@ -6,7 +6,8 @@ import androidx.paging.PagingData
 import androidx.paging.map
 import com.peachspot.liteum.data.db.BookLogs // 엔티티 BookLogs 사용
 import com.peachspot.liteum.data.db.BookLogsDao // 책 정보를 가져오기 위한 DAO
-import com.peachspot.liteum.ui.screens.FeedItem // UI 모델 FeedItem 사용 (또는 책 정보에 맞는 다른 UI 모델)
+import com.peachspot.liteum.data.model.FeedItem
+
 // import com.peachspot.liteum.ui.screens.BookReview // BookReview는 여기서 직접 사용하지 않음
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -16,6 +17,7 @@ import java.util.Date
 import java.util.Locale
 
 interface HomeRepository {
+
     /**
      * 홈 화면에 표시할 모든 책 정보의 PagingData Flow를 가져옵니다.
      * 모든 책 정보를 페이징하여 FeedItem으로 변환합니다.
@@ -45,6 +47,50 @@ interface HomeRepository {
      * 데이터가 많을 경우 메모리 및 성능 문제를 야기할 수 있습니다.
      */
     suspend fun getAllBookFeedItemsList(): List<FeedItem>
+
+    // === 리뷰 수정 관련 메서드들 추가 ===
+
+    /**
+     * 특정 ID의 BookLog를 가져옵니다.
+     * @param id 조회할 BookLog의 ID
+     * @return BookLog 객체의 Flow (없을 경우 null)
+     */
+    fun getBookLogById(id: Long): Flow<BookLogs?>
+
+    /**
+     * BookLog를 업데이트합니다.
+     * @param bookLog 업데이트할 BookLog 객체
+     * @return 업데이트된 행의 수
+     */
+    suspend fun updateBookLog(bookLog: BookLogs): Int
+
+    /**
+     * 새로운 BookLog를 삽입합니다.
+     * @param bookLog 삽입할 BookLog 객체
+     * @return 삽입된 row ID
+     */
+    suspend fun insertBookLog(bookLog: BookLogs): Long
+
+    /**
+     * 특정 ID의 BookLog를 삭제합니다.
+     * @param id 삭제할 BookLog의 ID
+     * @return 삭제된 행의 수
+     */
+    suspend fun deleteBookLogById(id: Long): Int
+
+    /**
+     * 서버 ID로 BookLog를 가져옵니다.
+     * @param serverId 조회할 BookLog의 서버 ID
+     * @return BookLog 객체의 Flow (없을 경우 null)
+     */
+    fun getBookLogByServerId(serverId: Long): Flow<BookLogs?>
+
+    /**
+     * 특정 사용자의 모든 BookLog를 가져옵니다.
+     * @param memberId 조회할 사용자의 ID
+     * @return BookLog 리스트의 Flow
+     */
+    fun getBookLogsByMemberId(memberId: String): Flow<List<BookLogs>>
 }
 
 class HomeRepositoryImpl(
@@ -114,6 +160,32 @@ class HomeRepositoryImpl(
         return allLogsList.map { bookLog -> mapBookLogToFeedItem(bookLog) }
     }
 
+    // === 리뷰 수정 관련 메서드 구현 ===
+
+    override fun getBookLogById(id: Long): Flow<BookLogs?> {
+        return bookLogsDao.getBookLogById(id)
+    }
+
+    override suspend fun updateBookLog(bookLog: BookLogs): Int {
+        return bookLogsDao.updateBookLog(bookLog)
+    }
+
+    override suspend fun insertBookLog(bookLog: BookLogs): Long {
+        return bookLogsDao.insertBookLog(bookLog)
+    }
+
+    override suspend fun deleteBookLogById(id: Long): Int {
+        return bookLogsDao.deleteBookLogById(id)
+    }
+
+    override fun getBookLogByServerId(serverId: Long): Flow<BookLogs?> {
+        return bookLogsDao.getBookLogByServerId(serverId)
+    }
+
+    override fun getBookLogsByMemberId(memberId: String): Flow<List<BookLogs>> {
+        return bookLogsDao.getBookLogsByMemberId(memberId)
+    }
+
     /**
      * BookLogs 객체를 FeedItem 객체로 매핑하는 헬퍼 함수.
      * 이 함수는 BookLogs의 필드를 사용하여 FeedItem을 생성합니다.
@@ -132,7 +204,7 @@ class HomeRepositoryImpl(
         // FeedItem의 reviews 필드는 이 컨텍스트에서는 비워두거나,
         // 책에 대한 간단한 정보(예: 평점 요약 등 BookLogs에 있다면)로 대체할 수 있습니다.
         // 여기서는 비워둡니다.
-        val bookSpecificReviews = emptyList<com.peachspot.liteum.ui.screens.BookReview>() // 타입 명시
+        val bookSpecificReviews = emptyList<com.peachspot.liteum.data.model.BookReview>() // 타입 명시
 
         return FeedItem(
             id = bookLog.id.toString(), // BookLogs의 ID 사용
