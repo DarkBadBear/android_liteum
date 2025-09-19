@@ -8,6 +8,7 @@ import android.net.Uri
 import android.util.Base64 // 안드로이드 표준 Base64 사용
 import android.util.Log
 import androidx.compose.animation.core.copy
+
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
@@ -55,6 +56,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import org.json.JSONObject // ID 토큰 파싱용
+import java.io.File
 import java.io.IOException // 예외 처리용
 import java.nio.charset.Charset // Charset 명시
 import java.security.GeneralSecurityException // Tink 예외 처리용
@@ -62,6 +64,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.coroutines.resume
+import kotlin.io.path.exists
 
 // DataStore 인스턴스 (Application Context 확장으로 정의하는 것이 일반적)
 // 파일 최상단 또는 별도의 DI 파일에 정의
@@ -95,6 +98,31 @@ class HomeViewModel(
     private val reviewRepository: ReviewRepository
 ) : AndroidViewModel(application) { // AndroidViewModel 상속 시 application 자동 주입
 
+
+    val showOnlyMyReviews: StateFlow<Boolean> = userPreferencesRepository.showOnlyMyReviewsFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+
+    // "내것만 보기" 설정을 업데이트하는 함수
+    fun setShowOnlyMyReviews(showOnly: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.updateShowOnlyMyReviews(showOnly)
+        }
+    }
+
+
+    // HomeViewModel 내부에 추가할 수 있는 예시 함수
+    fun getCurrentUserId(): String? {
+        // 현재 로그인 상태와 UID 우선순위에 따라 반환
+        return if (_uiState.value.isUserLoggedIn) {
+            _uiState.value.firebaseUid ?: _uiState.value.kakaoUid
+        } else {
+            null
+        }
+    }
     private fun formatDateToString(date: Date?): String? {
         return date?.let {
             SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(it)
@@ -151,24 +179,61 @@ class HomeViewModel(
         // )
     }
 
-    fun deleteBookLogWithReviews(bookLogId:Long) {
+    fun deleteBookLogWithReviews(bookLogId: Long) {
         viewModelScope.launch {
             try {
-                // 1. 리뷰들 먼저 삭제
-                val deletedReviews = reviewRepository.deleteAllReviewsForBook(bookLogId)
+                // --- 1. 삭제할 BookLog 정보를 먼저 가져와서 이미지 파일 경로 확보 ---
+                val bookLogToDelete = bookRepository.getBookLogById(bookLogId).firstOrNull() // Flow에서 첫 번째 값 또는 null 가져오기
 
-                // 2. 책 기록 삭제
-                val deletedRows = bookRepository.deleteBookLogById(bookLogId)
-                if (deletedRows > 0) {
-                    Log.d("ViewModel", "BookLog $bookLogId deleted successfully")
+                if (bookLogToDelete == null) {
+                    Log.w("ViewModel", "BookLog with ID $bookLogId not found for deletion.")
+                    // 적절한 사용자 메시지 업데이트
+                    _uiState.update { it.copy(userMessage = "삭제할 독서 기록을 찾을 수 없습니다.", userMessageType = "error") }
+                    return@launch
+                }
+
+                val imagePath = bookLogToDelete.coverImageUri // 이미지 파일 경로 (문자열이라고 가정)
+
+                // --- 2. 리뷰들 먼저 삭제 ---
+                val deletedReviews = reviewRepository.deleteAllReviewsForBook(bookLogId)
+                Log.d("ViewModel", "Deleted $deletedReviews reviews for BookLog ID $bookLogId")
+
+                // --- 3. 책 기록 삭제 ---
+                val deletedBookLogRows = bookRepository.deleteBookLogById(bookLogId)
+
+                if (deletedBookLogRows > 0) {
+                    Log.d("ViewModel", "BookLog $bookLogId deleted successfully from DB.")
+
+                    // --- 4. DB에서 책 기록이 성공적으로 삭제된 후, 이미지 파일 삭제 ---
+                    if (!imagePath.isNullOrEmpty()) {
+                        try {
+                            val imageFile = File(imagePath)
+                            if (imageFile.exists()) {
+                                if (imageFile.delete()) {
+                                    Log.d("ViewModel", "Image file deleted successfully: $imagePath")
+                                } else {
+                                    Log.w("ViewModel", "Failed to delete image file: $imagePath")
+                                    // 파일 삭제 실패는 기록하지만, DB 삭제는 이미 완료되었으므로 치명적 오류로 처리하지 않을 수 있음
+                                }
+                            } else {
+                                Log.w("ViewModel", "Image file not found at path: $imagePath (already deleted or wrong path?)")
+                            }
+                        } catch (e: Exception) {
+                            Log.e("ViewModel", "Error deleting image file: $imagePath", e)
+                        }
+                    }
+                    _uiState.update { it.copy(userMessage = "독서 기록과 관련 정보가 삭제되었습니다.", userMessageType = "success") }
                 } else {
-                    Log.w("ViewModel", "BookLog $bookLogId deletion failed")
+                    Log.w("ViewModel", "BookLog $bookLogId deletion from DB failed.")
+                    _uiState.update { it.copy(userMessage = "독서 기록 삭제에 실패했습니다.", userMessageType = "error") }
                 }
             } catch (e: Exception) {
                 Log.e("ViewModel", "Error deleting book log with reviews", e)
+                _uiState.update { it.copy(userMessage = "삭제 중 오류가 발생했습니다: ${e.localizedMessage}", userMessageType = "error") }
             }
         }
     }
+
 
 
     fun deleteReview(feedItemId: Long, reviewId: Long) {
@@ -266,31 +331,6 @@ class HomeViewModel(
         }
     }
 
-//    val feedItems: StateFlow<List<FeedItem>> = bookRepository.getAllBookFeedItemsFlow()
-//        .onStart {
-//            Log.d("HomeViewModel", "feedItems flow started, isLoadingFeed = true") // Logger 대신 Log 사용
-//            _uiState.update { it.copy(isLoadingFeed = true, userMessage = null) }
-//        }
-//        .map { items ->
-//            Log.d("HomeViewModel", "feedItems flow received ${items.size} items, isLoadingFeed = false")
-//            _uiState.update { it.copy(isLoadingFeed = false, userMessage = null) }
-//            items
-//        }
-//        .catch { e ->
-//            Log.e("HomeViewModel", "Error loading feed items flow", e)
-//            _uiState.update {
-//                it.copy(
-//                    isLoadingFeed = false,
-//                    userMessage = "피드 로딩 오류: ${e.message ?: "알 수 없는 오류"}"
-//                )
-//            }
-//            emit(emptyList())
-//        }
-//        .stateIn(
-//            scope = viewModelScope,
-//            started = SharingStarted.WhileSubscribed(5000),
-//            initialValue = emptyList()
-//        )
 
     init {
         viewModelScope.launch {
@@ -853,8 +893,12 @@ class HomeViewModel(
      * @param newReviewText 업데이트되거나 새로 생성될 리뷰의 텍스트.
      * @param newShareSetting 리뷰의 공유 설정 값.
      */
+    // HomeViewModel.ktimport java.io.File // File 클래스 import
+
+// ... (다른 import 및 코드) ...
+
     fun updateBookLogAndReview(
-        updatedBookLog: BookLogs,
+        updatedBookLog: BookLogs, // UI에서 전달된, 이미 새 이미지 경로가 설정된 BookLogs 객체
         newReviewText: String,
         newShareSetting: String
     ) {
@@ -862,7 +906,7 @@ class HomeViewModel(
             _uiState.update { it.copy(isLoading = true, userMessage = null) }
 
             val currentMemberId: String? = if (_uiState.value.isUserLoggedIn) {
-                _uiState.value.firebaseUid ?: _uiState.value.kakaoUid // 로그인 방식에 따라 주 사용자 ID 선택
+                _uiState.value.firebaseUid ?: _uiState.value.kakaoUid
             } else {
                 null
             }
@@ -879,7 +923,6 @@ class HomeViewModel(
                 return@launch
             }
 
-            // BookLog의 member_id가 현재 사용자의 ID와 일치하는지 확인
             if (updatedBookLog.member_id != currentMemberId) {
                 Log.e("HomeViewModel", "User ID mismatch. User '$currentMemberId' trying to update bookLog of '${updatedBookLog.member_id}'.")
                 _uiState.update {
@@ -893,106 +936,108 @@ class HomeViewModel(
             }
 
             try {
-                // --- 1. BookLogs 업데이트 ---
-                // updatedBookLog 객체는 호출부(EditReviewScreen)에서 이미 모든 변경사항
-                // (텍스트 필드, 이미지 URI, 평점 등)을 담고 있다고 가정합니다.
-                // BookLogs 엔티티에 updatedAtMillis 필드가 있고, 자동 업데이트되지 않는다면 여기서 설정:
-                // val bookLogToUpdate = updatedBookLog.copy(updatedAtMillis = System.currentTimeMillis())
-                val bookLogToUpdate = updatedBookLog // 현재는 BookLogs에 updatedAtMillis가 없다고 가정
+                // --- 0. 기존 BookLog 정보 가져오기 (이전 이미지 경로 확인용) ---
+                // BookLog ID가 유효한지 먼저 확인 (updatedBookLog.id가 0이 아니어야 함)
+                if (updatedBookLog.id <= 0L) {
+                    Log.e("HomeViewModel", "Invalid BookLog ID (${updatedBookLog.id}) for update.")
+                    _uiState.update { it.copy(isLoading = false, userMessage = "잘못된 독서 기록 ID입니다.", userMessageType = "error") }
+                    return@launch
+                }
 
-                val updatedBookLogRows = bookRepository.updateBookLog(bookLogToUpdate)
+                val oldBookLog = bookRepository.getBookLogById(updatedBookLog.id).firstOrNull() // Flow에서 첫 값 가져오기 (동기적 효과)
 
-                if (updatedBookLogRows > 0) {
-                    Log.d("HomeViewModel", "BookLog (ID: ${bookLogToUpdate.id}) updated successfully. Rows affected: $updatedBookLogRows")
+                // --- 1. BookLogs 업데이트 전, 기존 이미지 파일 삭제 처리 ---
+                if (oldBookLog != null) {
+                    val oldImagePath = oldBookLog.coverImageUri
+                    val newImagePath = updatedBookLog.coverImageUri // UI에서 전달된 새 이미지 경로
 
-                    // BookLog ID 유효성 검사 (일반적으로 0L 이하는 유효하지 않은 ID)
-                    if (bookLogToUpdate.id <= 0L) {
-                        Log.e("HomeViewModel", "Invalid BookLog ID (${bookLogToUpdate.id}) after update. Cannot proceed with review.")
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                userMessage = "독서 기록 수정은 성공했으나, 리뷰 연동에 문제가 발생했습니다 (잘못된 책 ID).",
-                                userMessageType = "warning"
-                            )
-                        }
-                        return@launch
-                    }
-
-                    // --- 2. 연결된 ReviewLog 업데이트 또는 생성 ---
-                    // ReviewRepository의 getReviewsForBook는 List<ReviewLogs>를 반환.
-                    // 이 예제에서는 해당 책의 첫 번째 리뷰를 대상으로 하거나, 없으면 새로 생성.
-                    val existingReviewsFlow = reviewRepository.getReviewsForBook(bookLogToUpdate.id)
-                    val existingReviewLog = existingReviewsFlow.firstOrNull()?.firstOrNull() // Flow<List<T>> -> List<T>? -> T?
-
-                    if (existingReviewLog != null) {
-                        // 기존 리뷰 업데이트
-                        // ReviewRepositoryImpl에서 updatedAtMillis를 자동 처리하므로 ViewModel에서 신경쓰지 않음.
-                        val reviewLogToUpdate = existingReviewLog.copy(
-                            reviewText = newReviewText,
-                            share = newShareSetting
-                            // memberId는 기존 리뷰의 것을 유지 (또는 currentMemberId로 강제할 수도 있음)
-                        )
-                        val updatedReviewLogRows = reviewRepository.updateReview(reviewLogToUpdate)
-
-                        if (updatedReviewLogRows > 0) {
-                            Log.d("HomeViewModel", "ReviewLog (ID: ${reviewLogToUpdate.id}) updated successfully for BookLog ID: ${bookLogToUpdate.id}")
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    userMessage = "독서 기록과 리뷰가 성공적으로 수정되었습니다.",
-                                    userMessageType = "success"
-                                )
+                    // 조건:
+                    // 1. 이전 이미지 경로가 존재하고 (null이나 empty가 아니고)
+                    // 2. 이전 이미지 경로와 새 이미지 경로가 다르거나 (이미지 교체)
+                    // 3. 새 이미지 경로가 비어있다면 (이미지 삭제)
+                    if (!oldImagePath.isNullOrEmpty() && (oldImagePath != newImagePath || newImagePath.isNullOrEmpty())) {
+                        try {
+                            val oldImageFile = File(oldImagePath) // oldImagePath가 절대 경로라고 가정
+                            if (oldImageFile.exists()) {
+                                if (oldImageFile.delete()) {
+                                    Log.d("HomeViewModel", "Successfully deleted old image file: $oldImagePath")
+                                } else {
+                                    Log.w("HomeViewModel", "Failed to delete old image file: $oldImagePath")
+                                }
+                            } else {
+                                Log.w("HomeViewModel", "Old image file not found (already deleted or wrong path): $oldImagePath")
                             }
-                        } else {
-                            Log.w("HomeViewModel", "ReviewLog update failed or no changes for BookLog ID: ${bookLogToUpdate.id}. Review ID: ${existingReviewLog.id}")
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    userMessage = "독서 기록은 수정되었으나, 리뷰 내용 변경에 실패했거나 변경사항이 없습니다.",
-                                    userMessageType = "warning"
-                                )
-                            }
-                        }
-                    } else {
-                        // 연결된 리뷰가 없는 경우 새로 생성
-                        Log.i("HomeViewModel", "No existing ReviewLog found for BookLog ID: ${bookLogToUpdate.id}. Creating a new one.")
-                        val newReview = ReviewLogs(
-                            // id는 Room에 의해 자동 생성되므로 0L 또는 기본값으로 설정
-                            id = 0L, // Room이 새 ID를 생성하도록 함
-                            bookLogLocalId = bookLogToUpdate.id,
-                            memberId = currentMemberId, // 현재 로그인한 사용자 ID로 설정
-                            reviewText = newReviewText,
-                            share = newShareSetting
-                            // createdAtMillis, updatedAtMillis는 ReviewRepositoryImpl의 addReview에서 자동 처리
-                        )
-                        val newReviewId = reviewRepository.addReview(newReview)
-
-                        if (newReviewId > 0L) {
-                            Log.d("HomeViewModel", "New ReviewLog created with ID: $newReviewId for BookLog ID: ${bookLogToUpdate.id}")
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    userMessage = "독서 기록 수정 및 새 리뷰가 성공적으로 저장되었습니다.",
-                                    userMessageType = "success"
-                                )
-                            }
-                        } else {
-                            Log.e("HomeViewModel", "Failed to create new ReviewLog for BookLog ID: ${bookLogToUpdate.id}. Returned ID: $newReviewId")
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    userMessage = "독서 기록은 수정되었으나, 새 리뷰 저장에 실패했습니다.",
-                                    userMessageType = "error"
-                                )
-                            }
+                        } catch (e: Exception) {
+                            // 파일 경로가 유효하지 않거나, 보안 예외 등으로 File 생성자에서 오류 발생 가능
+                            Log.e("HomeViewModel", "Error creating File object or deleting old image file for path: $oldImagePath", e)
                         }
                     }
                 } else {
-                    Log.e("HomeViewModel", "BookLog (ID: ${bookLogToUpdate.id}) update failed. No rows affected.")
+                    // oldBookLog가 null인 경우: DB에 해당 ID의 기록이 없는 이례적인 상황.
+                    // 이 경우 기존 이미지 삭제 로직은 건너뛰지만, 로깅은 필요.
+                    Log.w("HomeViewModel", "Old BookLog not found for ID: ${updatedBookLog.id} during update. Skipping old image deletion.")
+                }
+
+
+                // --- 2. BookLogs DB 업데이트 ---
+                Log.d("HomeViewModel", "Updating BookLog (ID: ${updatedBookLog.id}) with new coverImageUri: ${updatedBookLog.coverImageUri}")
+                val updatedBookLogRows = bookRepository.updateBookLog(updatedBookLog)
+
+                if (updatedBookLogRows > 0) {
+                    Log.d("HomeViewModel", "BookLog (ID: ${updatedBookLog.id}) updated successfully. Rows affected: $updatedBookLogRows")
+
+                    // BookLog ID 유효성 검사 (이미 위에서 했지만, 업데이트 후에도 확인 가능)
+                    if (updatedBookLog.id <= 0L) {
+                        Log.e("HomeViewModel", "Invalid BookLog ID (${updatedBookLog.id}) after update. Cannot proceed with review.")
+                        // ... (오류 처리) ...
+                        return@launch
+                    }
+
+                    // --- 3. 연결된 ReviewLog 업데이트 또는 생성 ---
+                    val existingReviewsFlow = reviewRepository.getReviewsForBook(updatedBookLog.id)
+                    val existingReviewLog = existingReviewsFlow.firstOrNull()?.firstOrNull()
+
+                    if (existingReviewLog != null) {
+                        val reviewLogToUpdate = existingReviewLog.copy(
+                            reviewText = newReviewText,
+                            share = newShareSetting
+                            // updatedAtMillis는 Repository에서 처리 가정
+                        )
+                        val updatedReviewLogRows = reviewRepository.updateReview(reviewLogToUpdate)
+                        // ... (성공/실패 로깅 및 UI 업데이트) ...
+                        if (updatedReviewLogRows > 0) {
+                            Log.d("HomeViewModel", "ReviewLog (ID: ${reviewLogToUpdate.id}) updated successfully.")
+                            _uiState.update { it.copy(isLoading = false, userMessage = "독서 기록과 리뷰가 성공적으로 수정되었습니다.", userMessageType = "success") }
+                        } else {
+                            Log.w("HomeViewModel", "ReviewLog update failed for BookLog ID: ${updatedBookLog.id}.")
+                            _uiState.update { it.copy(isLoading = false, userMessage = "독서 기록은 수정되었으나, 리뷰 내용 변경에 실패했거나 변경사항이 없습니다.", userMessageType = "warning") }
+                        }
+                    } else {
+                        Log.i("HomeViewModel", "No existing ReviewLog. Creating a new one for BookLog ID: ${updatedBookLog.id}")
+                        val newReview = ReviewLogs(
+                            id = 0L,
+                            bookLogLocalId = updatedBookLog.id,
+                            memberId = currentMemberId,
+                            reviewText = newReviewText,
+                            share = newShareSetting
+                            // createdAtMillis, updatedAtMillis는 Repository에서 처리 가정
+                        )
+                        val newReviewId = reviewRepository.addReview(newReview)
+                        // ... (성공/실패 로깅 및 UI 업데이트) ...
+                        if (newReviewId > 0L) {
+                            Log.d("HomeViewModel", "New ReviewLog created with ID: $newReviewId")
+                            _uiState.update { it.copy(isLoading = false, userMessage = "독서 기록 수정 및 새 리뷰가 성공적으로 저장되었습니다.", userMessageType = "success") }
+                        } else {
+                            Log.e("HomeViewModel", "Failed to create new ReviewLog for BookLog ID: ${updatedBookLog.id}")
+                            _uiState.update { it.copy(isLoading = false, userMessage = "독서 기록은 수정되었으나, 새 리뷰 저장에 실패했습니다.", userMessageType = "error") }
+                        }
+                    }
+                } else {
+                    Log.e("HomeViewModel", "BookLog (ID: ${updatedBookLog.id}) DB update failed. No rows affected.")
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            userMessage = "독서 기록 수정에 실패했습니다. 다시 시도해주세요.",
+                            userMessage = "독서 기록 수정에 실패했습니다. (DB 업데이트 실패)",
                             userMessageType = "error"
                         )
                     }
@@ -1009,6 +1054,8 @@ class HomeViewModel(
             }
         }
     }
+
+
 
 
 

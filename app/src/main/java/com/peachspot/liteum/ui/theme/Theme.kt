@@ -49,7 +49,7 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun liteumiTheme( // Composable 함수명은 PascalCase (대문자로 시작)
-    useDarkTheme: Boolean = isSystemInDarkTheme(), // 더 명확한 파라미터 이름
+    useDarkTheme: Boolean = false ,//isSystemInDarkTheme(), // 더 명확한 파라미터 이름
     // Dynamic color is available on Android 12+
     useDynamicColor: Boolean = true, // 더 명확한 파라미터 이름
     content: @Composable () -> Unit

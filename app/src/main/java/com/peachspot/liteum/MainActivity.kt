@@ -62,6 +62,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatDelegate
 //import androidx.privacysandbox.tools.core.generator.build
 import com.kakao.sdk.common.KakaoSdk
 import com.peachspot.liteum.data.remote.client.NetworkClient
@@ -129,8 +130,10 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+
         handleIntent(intent)
         FirebaseApp.initializeApp(this)
         Firebase.appCheck.installAppCheckProviderFactory(

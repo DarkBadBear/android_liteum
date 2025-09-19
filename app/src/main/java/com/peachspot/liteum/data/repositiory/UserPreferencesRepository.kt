@@ -20,17 +20,13 @@ import java.io.IOException
 private val Context.userSettingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "user_settings")
 
 object UserPreferencesKeys {
-    val LAST_STAIR_SPEED_INPUT = stringPreferencesKey("last_stair_speed_input")
-    val LAST_STAIR_TIME_INPUT = stringPreferencesKey("last_stair_time_input")
-    val USER_WEIGHT = floatPreferencesKey("user_weight")
     val USER_GOOGLE_ID = stringPreferencesKey("user_google_id")
     val USER_NAME = stringPreferencesKey("user_name")
     val USER_EMAIL = stringPreferencesKey("user_email")
     val USER_PHOTO_URL = stringPreferencesKey("user_photo_url")
-    val FLOOR_HEIGHT = floatPreferencesKey("floor_height")
-    val FLOOR_COUNT = intPreferencesKey("floor_count")
     val FIREBASE_UID = stringPreferencesKey("firebase_uid")
     val AGREE = booleanPreferencesKey("agree")
+    val SHOW_ONLY_MY_REVIEWS = booleanPreferencesKey("show_only_my_reviews")
 }
 
 data class UserProfileData(
@@ -60,35 +56,22 @@ open class UserPreferencesRepository(private val context: Context) {
             }
         }
 
-    val lastStairSpeedInputFlow: Flow<String?> = context.userSettingsDataStore.data
+
+    // "내것만 보기" 설정 값을 Flow로 읽어옴
+    val showOnlyMyReviewsFlow: Flow<Boolean> = context.userSettingsDataStore.data
         .catchIOExceptionAndEmitEmptyPreferences()
         .map { preferences ->
-            preferences[UserPreferencesKeys.LAST_STAIR_SPEED_INPUT]
+            // 키가 존재하지 않으면 기본값 false 반환
+            preferences[UserPreferencesKeys.SHOW_ONLY_MY_REVIEWS] ?: false
         }
 
-    suspend fun saveLastStairSpeedInput(speed: String) {
-        context.userSettingsDataStore.edit { settings ->
-            settings[UserPreferencesKeys.LAST_STAIR_SPEED_INPUT] = speed
+    // "내것만 보기" 설정 값을 업데이트
+    suspend fun updateShowOnlyMyReviews(showOnlyMyReviews: Boolean) {
+        context.userSettingsDataStore.edit { preferences ->
+            preferences[UserPreferencesKeys.SHOW_ONLY_MY_REVIEWS] = showOnlyMyReviews
         }
     }
 
-    val lastStairTimeInputFlow: Flow<String?> = context.userSettingsDataStore.data
-        .catchIOExceptionAndEmitEmptyPreferences()
-        .map { preferences ->
-            preferences[UserPreferencesKeys.LAST_STAIR_TIME_INPUT]
-        }
-
-    suspend fun saveLastStairTimeInput(time: String) {
-        context.userSettingsDataStore.edit { settings ->
-            settings[UserPreferencesKeys.LAST_STAIR_TIME_INPUT] = time
-        }
-    }
-
-    val userWeightFlow: Flow<Float?> = context.userSettingsDataStore.data
-        .catchIOExceptionAndEmitEmptyPreferences()
-        .map { preferences ->
-            preferences[UserPreferencesKeys.USER_WEIGHT]
-        }
 
 
     val agreeFlow: Flow<Boolean?> = context.userSettingsDataStore.data
@@ -105,18 +88,6 @@ open class UserPreferencesRepository(private val context: Context) {
     }
 
 
-    suspend fun saveUserWeight(weight: Float) {
-        context.userSettingsDataStore.edit { settings ->
-            settings[UserPreferencesKeys.USER_WEIGHT] = weight
-        }
-    }
-
-
-    suspend fun clearUserWeight() {
-        context.userSettingsDataStore.edit { settings ->
-            settings[UserPreferencesKeys.USER_WEIGHT] = 0.0F
-        }
-    }
 
 
     val userProfileDataFlow: Flow<UserProfileData> = context.userSettingsDataStore.data
@@ -181,31 +152,6 @@ open class UserPreferencesRepository(private val context: Context) {
 
     // --- ExerciseViewModel 관련 DataStore 함수들 ---
 
-    // 층 높이 Flow (기본값 제공 포함)
-    val floorHeightFlow: Flow<Float> = context.userSettingsDataStore.data
-        .catchIOExceptionAndEmitEmptyPreferences()
-        .map { preferences ->
-            preferences[UserPreferencesKeys.FLOOR_HEIGHT] ?: 2.2f // 기본값 2.2f
-        }
-
-    suspend fun saveFloorHeight(height: Float) {
-        context.userSettingsDataStore.edit { settings ->
-            settings[UserPreferencesKeys.FLOOR_HEIGHT] = height
-        }
-    }
-
-    // 층 수 Flow (기본값 제공 포함)
-    val floorCountFlow: Flow<Int> = context.userSettingsDataStore.data
-        .catchIOExceptionAndEmitEmptyPreferences()
-        .map { preferences ->
-            preferences[UserPreferencesKeys.FLOOR_COUNT] ?: 10 // 기본값 10
-        }
-
-    suspend fun saveFloorCount(count: Int) {
-        context.userSettingsDataStore.edit { settings ->
-            settings[UserPreferencesKeys.FLOOR_COUNT] = count
-        }
-    }
 
 
 }

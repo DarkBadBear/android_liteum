@@ -42,6 +42,7 @@ import androidx.paging.compose.itemKey // itemKey를 위한 import
 import com.peachspot.liteum.data.model.BookReview
 import com.peachspot.liteum.data.model.FeedItem
 import com.peachspot.liteum.viewmodel.FeedViewModel
+import com.peachspot.liteum.viewmodel.HomeViewModel
 
 @Composable
 fun FeedList(
@@ -52,7 +53,8 @@ fun FeedList(
     onItemClick: (FeedItem?) -> Unit,
     onEditClickCallback: (feedItem: FeedItem, review: BookReview?) -> Unit,
     onDeleteClickCallback: (feedItem: FeedItem, review: BookReview?) -> Unit,
-    feedViewModel: FeedViewModel
+    feedViewModel: FeedViewModel,
+    homeViewModel: HomeViewModel
 ) {
     // 로딩 완료 후 아이템이 없는지 확인하는 조건
     val showEmptyState = feedItems.loadState.refresh is LoadState.NotLoading &&
@@ -114,7 +116,8 @@ LazyColumn(
                         Log.e("FeedList", "onDeleteClick error: ${e.localizedMessage}")
                     }
                 },
-                feedViewModel=feedViewModel
+                feedViewModel=feedViewModel,
+                homeViewModel=homeViewModel
             )
 
             HorizontalDivider(

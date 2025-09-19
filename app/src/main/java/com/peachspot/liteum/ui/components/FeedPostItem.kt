@@ -43,6 +43,7 @@ import com.peachspot.liteum.data.model.BookReview
 import com.peachspot.liteum.data.model.FeedItem
 import com.peachspot.liteum.util.formatTimestamp // 분리된 유틸리티 함수 사용
 import com.peachspot.liteum.viewmodel.FeedViewModel
+import com.peachspot.liteum.viewmodel.HomeViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -54,7 +55,8 @@ fun FeedPostItem(
     modifier: Modifier = Modifier,
     onEditClick: (review: BookReview?) -> Unit,
     onDeleteClick: (review: BookReview?) -> Unit,
-    feedViewModel: FeedViewModel
+    feedViewModel: FeedViewModel,
+    homeViewModel: HomeViewModel
 ){
     var showReviewDialog by remember { mutableStateOf(false) }
     val currentReview = feedItem.reviews.firstOrNull() // 예시로 첫 번째 리뷰를 사용, 실제로는 어떤 리뷰를 보여줄지 로직 필요
@@ -67,6 +69,7 @@ fun FeedPostItem(
     val externalReviewsState by feedViewModel.externalReviews.collectAsState()
     val currentExternalReviewState = externalReviewsState[feedItemIdentifier]
 
+
     LaunchedEffect(pagerState, feedItem.isbn) { // feedItem.isbn도 key로 추가하여 isbn이 변경될 경우 재실행
         snapshotFlow { pagerState.settledPage }.collectLatest { page ->
             if (page == 1 && feedItem.isbn != null) {
@@ -78,11 +81,16 @@ fun FeedPostItem(
 
 
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top=10.dp,bottom=40.dp),
+            ) {
+
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .fillMaxWidth(),
+
             verticalAlignment = Alignment.CenterVertically
         ) {
             Spacer(modifier = Modifier.weight(1f))
@@ -109,17 +117,6 @@ fun FeedPostItem(
                         }
                     )
                 }
-            }
-        }
-
-
-        // 페이지 전환 완료 시 실행될 로직
-        LaunchedEffect(pagerState) {
-            snapshotFlow { pagerState.settledPage }.collect { page ->
-                // 페이지 전환이 완료될 때마다 이 블록이 실행됩니다.
-
-                // 여기에 원하는 동작을 추가하세요.
-                // 예: if (page == 1) { /* 리뷰 목록으로 전환 완료 시 특정 작업 수행 */ }
             }
         }
 
@@ -162,14 +159,10 @@ fun FeedPostItem(
                                 bookTitle = feedItem.bookTitle,
                                 reviews = combinedReviews.distinctBy { it.id }, // ID로 중복 제거
                                 modifier = Modifier.fillMaxSize(),
+                                homeViewModel=homeViewModel
                             )
                         }
-//                        ReviewList(
-//                            // ReviewList도 분리된 파일에서 import
-//                            bookTitle = feedItem.bookTitle,
-//                            reviews = feedItem.reviews,
-//                            modifier = Modifier.fillMaxSize(),
-//                        )
+
                     }
                 }
             }
@@ -203,10 +196,10 @@ fun FeedPostItem(
         }
 
 
-        Row(modifier = Modifier.padding(horizontal = 12.dp)) {
+        Row(modifier = Modifier.padding(horizontal = 5.dp)) {
             Column(
                 modifier = Modifier
-                    .padding(horizontal = 12.dp)
+                    .padding(horizontal = 5.dp)
                     ) {
                 Row {
                     Text(
@@ -214,16 +207,16 @@ fun FeedPostItem(
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                     )
                 }
-                Row {
+//                Row {
 //                    Text(
 //                        text = feedItem.caption, // 또는 currentReview?.content
 //                        style = MaterialTheme.typography.bodyMedium,
 //                        maxLines = 2,
 //                        overflow = TextOverflow.Ellipsis
 //                    )
-                }
+//                }
             }
-            Spacer(modifier = Modifier.height(4.dp))
+
         }
         Spacer(modifier = Modifier.height(4.dp))
 
@@ -241,7 +234,7 @@ fun FeedPostItem(
             text = formatTimestamp(feedItem.timestamp),
             style = MaterialTheme.typography.labelSmall,
             color = Color.Gray,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+            //modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
         )
 
     }

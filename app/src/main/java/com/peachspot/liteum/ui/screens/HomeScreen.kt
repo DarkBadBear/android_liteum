@@ -92,6 +92,9 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 // import com.peachspot.liteum.ui.components.AppBottomNavigationBar // 이미 위에서 import 됨
 import com.peachspot.liteum.ui.components.ReviewPreviewDialog
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.map
+import kotlin.math.abs
 
 
 enum class BottomNavItem(
@@ -147,25 +150,9 @@ fun HomeScreen(
     var selectedBottomNavItem by remember { mutableStateOf(BottomNavItem.Home) }
 
 
-    val listState = rememberLazyListState()
-    var isBottomBarVisible by remember { mutableStateOf(true) }
-    var previousScrollOffset by remember { mutableStateOf(0) }
 
-    val shouldShowBottomBar by remember {
-        derivedStateOf {
-            val currentOffset = listState.firstVisibleItemScrollOffset
-            val firstVisibleItemIndex = listState.firstVisibleItemIndex
-            if (firstVisibleItemIndex == 0 && currentOffset == 0) {
-                true
-            } else if (currentOffset > previousScrollOffset) {
-                false
-            } else if (currentOffset < previousScrollOffset) {
-                true
-            } else {
-                isBottomBarVisible
-            }
-        }
-    }
+    val listState = rememberLazyListState()
+
 
     // ReviewPreviewDialog를 위한 상태
     var selectedFeedItemForDialog by remember { mutableStateOf<FeedItem?>(null) }
@@ -192,12 +179,6 @@ fun HomeScreen(
         }
     }
 
-    LaunchedEffect(shouldShowBottomBar, listState.firstVisibleItemScrollOffset) {
-        // Log.d("ScrollDebug", "Effect triggered. shouldShow: $shouldShowBottomBar, currentOffset: ${listState.firstVisibleItemScrollOffset}, prevOffset: $previousScrollOffset")
-        isBottomBarVisible = shouldShowBottomBar
-        previousScrollOffset = listState.firstVisibleItemScrollOffset
-        // Log.d("ScrollDebug", "isBottomBarVisible set to: $isBottomBarVisible, previousScrollOffset set to: $previousScrollOffset")
-    }
 
     LaunchedEffect(uiState.userMessage) {
         uiState.userMessage?.let { message ->
@@ -398,17 +379,17 @@ fun HomeScreen(
                     )
                 },
                 bottomBar = {
-                    AnimatedVisibility(
-                        visible = isBottomBarVisible,
-                        enter = slideInVertically(
-                            initialOffsetY = { fullHeight -> fullHeight },
-                            animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
-                        ),
-                        exit = slideOutVertically(
-                            targetOffsetY = { fullHeight -> fullHeight },
-                            animationSpec = tween(durationMillis = 300, easing = FastOutLinearInEasing)
-                        )
-                    ) {
+//                    AnimatedVisibility(
+//                        visible = isBottomBarVisible,
+//                        enter = slideInVertically(
+//                            initialOffsetY = { fullHeight -> fullHeight },
+//                            animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+//                        ),
+//                        exit = slideOutVertically(
+//                            targetOffsetY = { fullHeight -> fullHeight },
+//                            animationSpec = tween(durationMillis = 300, easing = FastOutLinearInEasing)
+//                        )
+//                    ) {
                         AppBottomNavigationBar(
                             selectedItem = selectedBottomNavItem,
                             onItemSelected = { item ->
@@ -416,7 +397,7 @@ fun HomeScreen(
                                 // TODO: 네비게이션 로직
                             }
                         )
-                    }
+                    //}
                 }
             ) { innerPadding ->
 
@@ -436,27 +417,20 @@ fun HomeScreen(
                                     openDialogRequiringReview(nonNullFeedItem)
                                 }
                             },
-                            // --- 수정된 콜백 ---
-                            // HomeScreen.kt 내부의 FeedList 호출 부분
-
-                            onEditClickCallback = editCallback@{ actualFeedItem, actualReview -> // "editCallback@" 레이블 추가
+                              onEditClickCallback = editCallback@{ actualFeedItem, actualReview -> // "editCallback@" 레이블 추가
                                 if (showFeedItemDialog && selectedFeedItemForDialog == actualFeedItem && reviewForDialog == actualReview) {
                                     showFeedItemDialog = false
                                     selectedFeedItemForDialog = null
                                     reviewForDialog = null
                                 }
-
                                 val targetBookLogId = actualFeedItem.id
-
                                 if (targetBookLogId <= 0L) {
                                     Log.e("HomeScreen", "Cannot navigate to edit: targetBookLogId is invalid for FeedItem: ${actualFeedItem.bookTitle}")
                                     scope.launch {
                                         snackbarHostState.showSnackbar("리뷰를 수정/작성할 수 없는 항목입니다.")
                                     }
-                                    // --- 수정된 return 문 ---
                                     return@editCallback // 명시적 레이블 사용
                                 }
-
                                 val route = "review_edit/$targetBookLogId"
                                 Log.d("HomeScreen", "Navigating to: $route (Review exists: ${actualReview != null})")
                                 navController.navigate(route)
@@ -483,7 +457,8 @@ fun HomeScreen(
                                 }
                             },
 
-                                    feedViewModel = feedViewModel
+                                    feedViewModel = feedViewModel,
+                            homeViewModel = viewModel
                         )
                     }
                     ViewMode.GRID -> {

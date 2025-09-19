@@ -29,7 +29,7 @@ fun StarRatingInput(
 ) {
     Column(modifier = modifier) {
         Text(
-            text = "만족도 *",
+            text = "만족도",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 6.dp)

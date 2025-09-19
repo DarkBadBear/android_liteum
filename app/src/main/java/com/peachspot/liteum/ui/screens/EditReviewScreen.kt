@@ -57,6 +57,7 @@ import com.peachspot.liteum.ui.components.ReviewSectionCard
 import com.peachspot.liteum.ui.components.SectionTitle
 import com.peachspot.liteum.ui.components.StarRatingInput
 import com.peachspot.liteum.util.createImageFileForCamera
+import com.peachspot.liteum.util.saveImageToInternalStorageWithResizing
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -128,7 +129,10 @@ fun ReviewEditScreen(
     var rating by remember { mutableStateOf(0f) }
     var internalImageUri by remember { mutableStateOf<Uri?>(null) } // DB에 저장될 최종 이미지 URI (내부 저장소 경로)
     var displayImageUri by remember { mutableStateOf<Uri?>(null) } // 화면 표시에 사용될 URI (초기에는 DB값, 변경 시 새 선택 URI)
-    var tempCameraFile by remember { mutableStateOf<File?>(null) } // 카메라 촬영용 임시 파일
+    var tempCameraImageFile by remember { mutableStateOf<File?>(null) }
+    // DB에 저장될 최종 이미지 파일의 경로 (String)
+    var finalImageFilePath by remember { mutableStateOf<String?>(null) }
+
 
     var author by remember { mutableStateOf("") }
     var publisher by remember { mutableStateOf("") }
@@ -238,55 +242,79 @@ fun ReviewEditScreen(
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
     val coroutineScope = rememberCoroutineScope()
 
+// ReviewScreen.kt 내의 galleryLauncher
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { sourceUri ->
-            displayImageUri = sourceUri // 화면에는 바로 보여줌
-            // 선택된 이미지를 내부 저장소로 복사 (백그라운드에서)
-            coroutineScope.launch(Dispatchers.IO) {
-                val copiedUri = context.copyUriToInternalStorage(sourceUri)
-                withContext(Dispatchers.Main) {
-                    if (copiedUri != null) {
-                        internalImageUri = copiedUri // DB에 저장될 URI 업데이트
-                        Log.d("ReviewEditScreen", "Image copied to internal storage: $copiedUri")
-                    } else {
-                        displayImageUri = internalImageUri // 복사 실패 시 이전 이미지로 되돌림 (또는 사용자에게 알림)
-                        Toast.makeText(context, "이미지 처리에 실패했습니다.", Toast.LENGTH_SHORT).show()
-                    }
-                }
+            Log.d("ReviewEditScreen", "GalleryLauncher: Received sourceUri = $sourceUri")
+            // <<--- 여기를 수정 --- >> (util.kt의 함수 사용)
+            val savedImageFile = saveImageToInternalStorageWithResizing( // 또는 사용하고 있는 함수
+                context = context,
+                uri = sourceUri,
+                desiredFileNamePrefix = "GALLERY_RESIZED_",
+                targetWidth = 1280,
+                targetHeight = 1280,
+                quality = 80
+            )
+
+            if (savedImageFile != null) {
+                val newImageFilePath = savedImageFile.absolutePath // 파일 경로
+                internalImageUri = Uri.fromFile(savedImageFile) // 상태 변수에 URI 할당
+                displayImageUri = Uri.fromFile(savedImageFile) // 화면 표시용도 업데이트
+                Log.d("ReviewEditScreen", "GalleryLauncher: SUCCESS - internalImageUri updated to: ${internalImageUri?.toString()}, displayImageUri to: ${displayImageUri?.toString()}")
+            } else {
+                Log.e("ReviewEditScreen", "GalleryLauncher: FAILED to save/resize image from gallery.")
+                // 실패 시 사용자에게 알림, internalImageUri는 이전 값 유지 또는 null 처리
+                // Toast.makeText(context, "이미지 처리 실패", Toast.LENGTH_SHORT).show()
             }
-            tempCameraFile = null // 갤러리 선택 시 카메라 임시 파일은 무관
+            tempCameraImageFile = null // 이전 답변의 변수명 tempCameraFile -> tempCameraImageFile
         }
     }
 
+// ReviewScreen.kt 내의 cameraLauncher
     val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture()
-    ) { success ->
-        if (success) {
-            tempCameraFile?.let { file ->
-                val fileUri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-                displayImageUri = fileUri // 화면에는 바로 보여줌 (내부 저장소 복사 전)
-                // 촬영된 이미지를 내부 저장소의 최종 위치로 복사 (선택적: tempCameraFile이 이미 앱별 저장소면 그대로 사용 가능)
-                coroutineScope.launch(Dispatchers.IO) {
-                    // copyUriToInternalStorage는 content URI를 주로 다루므로, File URI를 직접 사용하거나
-                    // tempCameraFile을 원하는 최종 위치로 이동/복사하는 로직이 필요할 수 있음.
-                    // 여기서는 FileProvider URI를 internalImageUri로 우선 설정.
-                    // 만약 copyUriToInternalStorage가 File URI도 잘 처리한다면 그것을 사용.
-                    // 간단히 File URI 자체를 internalImageUri로 사용한다고 가정.
-                    val finalImageUri = FileProvider.getUriForFile(context,"${context.packageName}.fileprovider", file)
-                    withContext(Dispatchers.Main) {
-                        internalImageUri = finalImageUri
-                        Log.d("ReviewEditScreen", "Image taken with camera: $finalImageUri")
+        contract = ActivityResultContracts.TakePicture(),
+        onResult = { success ->
+            if (success) {
+                tempCameraImageFile?.let { capturedFile -> // 이전 답변의 변수명 tempCameraFile -> tempCameraImageFile
+                    Log.d("ReviewEditScreen", "CameraLauncher: Captured file exists at ${capturedFile.absolutePath}")
+                    val sourceUriForCamera = FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.fileprovider",
+                        capturedFile
+                    )
+                    // <<--- 여기를 수정 --- >> (util.kt의 함수 사용)
+                    val savedImageFileFromCamera = saveImageToInternalStorageWithResizing(
+                        context = context,
+                        uri = sourceUriForCamera, // FileProvider URI 전달
+                        desiredFileNamePrefix = "CAMERA_RESIZED_",
+                        targetWidth = 1280,
+                        targetHeight = 1280,
+                        quality = 80
+                    )
+
+                    if (savedImageFileFromCamera != null) {
+                        val newImageFilePath = savedImageFileFromCamera.absolutePath
+                        internalImageUri = Uri.fromFile(savedImageFileFromCamera)
+                        displayImageUri = Uri.fromFile(savedImageFileFromCamera)
+                        Log.d("ReviewEditScreen", "CameraLauncher: SUCCESS - internalImageUri updated to: ${internalImageUri?.toString()}, displayImageUri to: ${displayImageUri?.toString()}")
+                        capturedFile.delete() // 원본 임시 파일 삭제
+                        tempCameraImageFile = null
+                    } else {
+                        Log.e("ReviewEditScreen", "CameraLauncher: FAILED to save/resize image from camera.")
+                        // capturedFile.delete() // 실패 시 임시 파일 삭제 여부 결정
+                        // tempCameraImageFile = null
                     }
                 }
+            } else {
+                tempCameraImageFile?.delete()
+                tempCameraImageFile = null
+                Log.d("ReviewEditScreen", "CameraLauncher: Picture taking cancelled or failed.")
             }
-        } else {
-            tempCameraFile?.delete() // 촬영 실패 또는 취소 시 임시 파일 삭제
         }
-        // tempCameraFile은 촬영 후에는 더 이상 직접적으로 사용되지 않으므로 null로 설정해도 무방
-        // tempCameraFile = null
-    }
+    )
+
 
 
     var showPublishDatePicker by remember { mutableStateOf(false) }
@@ -326,8 +354,20 @@ fun ReviewEditScreen(
                 onClick = {
                     if (uiState.isLoading) return@ExtendedFloatingActionButton // 중복 클릭 방지
 
-                    if (bookTitle.isNotBlank() && currentReviewText.isNotBlank() && rating > 0) {
+                    if (bookTitle.isNotBlank()) {
                         editableReviewState?.bookLog?.let { currentBookLog ->
+
+                            // 1. 최종적으로 DB에 저장될 이미지 URI 문자열 결정
+                            // internalImageUri가 null이면 (이미지 삭제 또는 선택 안 함), 빈 문자열 "" 사용
+                            // 만약 DB에서 null을 허용하고 이미지 없음을 null로 표현하고 싶다면 `internalImageUri?.toString()` 으로 변경
+                            val finalCoverImageUriString = internalImageUri?.toString() ?: ""
+
+                            Log.d("ReviewEditScreen", "FAB onClick: internalImageUri = ${internalImageUri?.toString()}")
+                            Log.d("ReviewEditScreen", "FAB onClick: Determined finalCoverImageUriString for DB = '$finalCoverImageUriString'")
+                            Log.d("ReviewEditScreen", "FAB onClick: Original currentBookLog.coverImageUri = '${currentBookLog.coverImageUri}'")
+
+
+                            // 2. BookLogs 객체 업데이트
                             val bookLogDataToUpdate = currentBookLog.copy(
                                 bookTitle = bookTitle,
                                 rating = rating,
@@ -339,8 +379,10 @@ fun ReviewEditScreen(
                                 endReadDate = endReadDateString.takeIf { it.isNotBlank() },
                                 bookGenre = bookGenre.takeIf { it.isNotBlank() },
                                 pageCount = pageCount.takeIf { it.isNotBlank() }?.toIntOrNull(),
-                                coverImageUri = internalImageUri?.toString() ?: "" // 내부 저장소에 복사된 이미지 URI
+                                coverImageUri = finalCoverImageUriString // 결정된 최종 이미지 URI 문자열 사용
                             )
+
+                            Log.d("ReviewEditScreen", "FAB onClick: Calling ViewModel with bookLogDataToUpdate.coverImageUri = '${bookLogDataToUpdate.coverImageUri}'")
 
                             viewModel.updateBookLogAndReview(
                                 updatedBookLog = bookLogDataToUpdate,
@@ -348,10 +390,11 @@ fun ReviewEditScreen(
                                 newShareSetting = currentShareSetting
                             )
                         } ?: run {
+                            Log.e("ReviewEditScreen", "FAB onClick: editableReviewState or editableReviewState.bookLog is null")
                             Toast.makeText(context, "기존 독서 기록 정보를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show()
                         }
                     } else {
-                        Toast.makeText(context, "제목, 별점, 리뷰 내용은 필수입니다.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "제목은 필수입니다. (별점, 리뷰 내용은 선택)", Toast.LENGTH_SHORT).show()
                     }
                 },
                 icon = { if (uiState.isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary) else Icon(Icons.Filled.Check, contentDescription = null) },
@@ -359,8 +402,10 @@ fun ReviewEditScreen(
                 modifier = Modifier.padding(16.dp),
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
-                expanded = !uiState.isLoading // 로딩 중에는 아이콘만 보이도록 (선택적)
+                expanded = !uiState.isLoading
             )
+
+
         },
         floatingActionButtonPosition = FabPosition.End
     ) { paddingValues ->
@@ -397,10 +442,10 @@ fun ReviewEditScreen(
                         onCameraClick = {
                             if (cameraPermissionState.status.isGranted) {
                                 val newFile = context.createImageFileForCamera()
-                                tempCameraFile = newFile
+                                tempCameraImageFile = newFile
                                 val uriForCamera = FileProvider.getUriForFile(
                                     context,
-                                    "${context.packageName}.fileprovider", // AndroidManifest.xml의 provider authorities와 일치해야 함
+                                    "${context.packageName}.fileprovider", // AndroidManifest.xml의 authorities와 일치
                                     newFile
                                 )
                                 cameraLauncher.launch(uriForCamera)
@@ -410,9 +455,11 @@ fun ReviewEditScreen(
                         },
                         onImageClearClick = {
                             displayImageUri = null
-                            internalImageUri = null // DB에 저장될 URI도 초기화
-                            tempCameraFile?.delete()
-                            tempCameraFile = null
+                            finalImageFilePath = null // DB에 저장될 경로도 초기화
+                            // 만약 tempCameraImageFile이 있다면 그것도 삭제/초기화 고려
+                            tempCameraImageFile?.delete()
+                            tempCameraImageFile = null
+                            Log.d("ReviewScreen", "이미지 선택 초기화")
                         }
                     )
 
@@ -494,7 +541,7 @@ fun ReviewEditScreen(
                         OutlinedTextField(
                             value = currentReviewText,
                             onValueChange = { currentReviewText = it },
-                            label = { Text("리뷰 내용 *") },
+                            label = { Text("리뷰 내용") },
                             modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 120.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
                             maxLines = 5

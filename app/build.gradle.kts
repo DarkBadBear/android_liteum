@@ -87,6 +87,13 @@ android {
     }
 }
 dependencies {
+
+        implementation(libs.androidx.exifinterface)
+
+
+
+
+
     implementation(libs.androidx.paging.runtime.ktx)
     implementation(libs.google.tink)
     implementation(libs.androidx.datastore.preferences)

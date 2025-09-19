@@ -74,6 +74,8 @@ import com.peachspot.liteum.ui.components.ReviewSectionCard
 import com.peachspot.liteum.ui.components.SectionTitle
 import com.peachspot.liteum.ui.components.StarRatingInput
 import com.peachspot.liteum.util.createImageFileForCamera
+import com.peachspot.liteum.util.saveImageToInternalStorageWithResizing
+
 import com.peachspot.liteum.viewmodel.BookSearchViewModelFactory
 
 // --- 이미지 저장 유틸리티 함수 ---
@@ -152,23 +154,37 @@ fun ReviewScreen(
     val searchError by bookSearchViewModel.errorMessage.collectAsState()
 
 
+// ReviewScreen.kt 내의 galleryLauncher
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { sourceUri ->
-            val savedImageFile = saveImageToInternalStorage(context, sourceUri)
+            // <<--- 여기를 수정 --- >>
+            // 리사이징 및 압축 기능이 있는 함수로 교체
+            // targetWidth, targetHeight, quality는 원하는 값으로 설정
+            val savedImageFile = saveImageToInternalStorageWithResizing(
+                context = context,
+                uri = sourceUri,
+                desiredFileNamePrefix = "GALLERY_RESIZED_", // 파일명 접두사 변경 가능
+                targetWidth = 1280, // 예시: 최대 너비 1280px
+                targetHeight = 1280, // 예시: 최대 높이 1280px
+                quality = 80 // 예시: JPEG 압축 품질 80%
+            )
+
             if (savedImageFile != null) {
-                displayImageUri = Uri.fromFile(savedImageFile) // UI 표시용
-                finalImageFilePath = savedImageFile.absolutePath // DB 저장용
-                Log.d("ReviewScreen", "갤러리 이미지 저장: ${finalImageFilePath}")
+                displayImageUri = Uri.fromFile(savedImageFile)
+                finalImageFilePath = savedImageFile.absolutePath
+                Log.d("ReviewScreen", "갤러리 이미지 (리사이징 후) 저장: ${finalImageFilePath}")
             } else {
-                Log.e("ReviewScreen", "갤러리 이미지 내부 저장 실패")
-                // TODO: 사용자에게 오류 메시지 표시 (Snackbar 등)
+                Log.e("ReviewScreen", "갤러리 이미지 내부 저장/리사이징 실패")
+                // 사용자에게 오류 메시지 표시 (예: Snackbar)
+                // Toast.makeText(context, "이미지 처리 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
             }
-            tempCameraImageFile = null // 갤러리 선택 시 카메라 임시 파일은 무효화
+            tempCameraImageFile = null
         }
     }
 
+// ReviewScreen.kt 내의 cameraLauncher
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture(),
         onResult = { success ->
@@ -176,28 +192,34 @@ fun ReviewScreen(
                 tempCameraImageFile?.let { capturedFile ->
                     val sourceUriForCamera = FileProvider.getUriForFile(
                         context,
-                        "${context.packageName}.fileprovider", // AndroidManifest.xml의 authorities와 일치
+                        "${context.packageName}.fileprovider",
                         capturedFile
                     )
-                    // 촬영된 임시 파일을 내부 저장소로 복사
-                    val savedImageFileFromCamera = saveImageToInternalStorage(context, sourceUriForCamera, "CAMERA_")
+                    // <<--- 여기를 수정 --- >>
+                    val savedImageFileFromCamera = saveImageToInternalStorageWithResizing(
+                        context = context,
+                        uri = sourceUriForCamera,
+                        desiredFileNamePrefix = "CAMERA_RESIZED_",
+                        targetWidth = 1280,
+                        targetHeight = 1280,
+                        quality = 80
+                    )
+
                     if (savedImageFileFromCamera != null) {
-                        displayImageUri = Uri.fromFile(savedImageFileFromCamera) // UI 표시용
-                        finalImageFilePath = savedImageFileFromCamera.absolutePath // DB 저장용
-                        Log.d("ReviewScreen", "카메라 이미지 저장: ${finalImageFilePath}")
-                        // 원본 임시 카메라 파일 삭제 (내부 저장소로 복사했으므로)
+                        displayImageUri = Uri.fromFile(savedImageFileFromCamera)
+                        finalImageFilePath = savedImageFileFromCamera.absolutePath
+                        Log.d("ReviewScreen", "카메라 이미지 (리사이징 후) 저장: ${finalImageFilePath}")
                         capturedFile.delete()
                         tempCameraImageFile = null
                     } else {
-                        Log.e("ReviewScreen", "카메라 이미지 내부 저장 실패")
-                        // TODO: 사용자에게 오류 메시지 표시
-                        // 이 경우, 임시 파일을 바로 사용할 수도 있지만, 앱 재시작 시 사라질 수 있음
-                        // displayImageUri = sourceUriForCamera // 임시 파일 URI를 UI에 표시 (비추천)
-                        // finalImageFilePath = capturedFile.absolutePath // 임시 파일 경로를 DB에 저장 (비추천)
+                        Log.e("ReviewScreen", "카메라 이미지 내부 저장/리사이징 실패")
+                        // 사용자에게 오류 메시지 표시
+                        // 임시 파일은 그대로 둘 수도 있지만, 결국 리사이징 실패한 것이므로 삭제 고려
+                        capturedFile.delete() // 실패 시 임시 파일도 삭제
+                        tempCameraImageFile = null
                     }
                 }
             } else {
-                // 촬영 실패 또는 취소 시 임시 파일 삭제
                 tempCameraImageFile?.delete()
                 tempCameraImageFile = null
                 Log.d("ReviewScreen", "카메라 촬영 취소 또는 실패")
@@ -239,7 +261,7 @@ fun ReviewScreen(
             ExtendedFloatingActionButton(
                 onClick = {
                     // finalImageFilePath가 null이 아니어야 이미지가 정상적으로 저장된 것
-                    if (bookTitle.isNotBlank() && finalImageFilePath != null && reviewText.isNotBlank() && rating > 0) {
+                    if (bookTitle.isNotBlank() && finalImageFilePath != null ) {
                         val currentMemberId = "temp_user_id" // TODO: 실제 사용자 ID 가져오기
                         val sharePreference = "Y" // TODO: UI에서 사용자 선택 받기 (공개/비공개)
 
@@ -287,7 +309,9 @@ fun ReviewScreen(
         ) {
             ImagePickerSection(
                 selectedImageUri = displayImageUri, // UI 표시용 Uri
-                onGalleryClick = { galleryLauncher.launch("image/*") },
+                onGalleryClick = {
+                    galleryLauncher.launch("image/*")
+                                 },
                 onCameraClick = {
                     if (cameraPermissionState.status.isGranted) {
                         val newFile = context.createImageFileForCamera()
@@ -439,7 +463,7 @@ fun ReviewScreen(
                 OutlinedTextField(
                     value = reviewText,
                     onValueChange = { reviewText = it },
-                    label = { Text("리뷰 내용 *") },
+                    label = { Text("리뷰 내용") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .defaultMinSize(minHeight = 120.dp),
