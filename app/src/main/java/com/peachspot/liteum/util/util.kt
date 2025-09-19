@@ -23,6 +23,26 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+
+
+// Context 확장 함수를 만들어 카메라 촬영용 임시 파일 생성
+fun Context.createImageFileForCamera(): File {
+    val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+    val imageFileName = "JPEG_TEMP_${timeStamp}_"
+    // 카메라 촬영용 임시 파일은 앱 외부 캐시 디렉토리에 저장 (FileProvider를 통해 접근)
+    val storageDir = File(externalCacheDir, "temp_images")
+    if (!storageDir.exists()) {
+        storageDir.mkdirs()
+    }
+    return File.createTempFile(
+        imageFileName, /* prefix */
+        ".jpg",       /* suffix */
+        storageDir    /* directory */
+    )
+}
+
+
+
 // 이미지 저장 유틸리티 함수 (예시: 앱 내부 저장소의 'images' 디렉토리에 저장)
 fun saveImageToInternalStorage(context: Context, uri: Uri, desiredFileNamePrefix: String = "COVER_"): File? {
     val inputStream = context.contentResolver.openInputStream(uri) ?: return null

@@ -1,5 +1,6 @@
 package com.peachspot.liteum.data.repositiory // 실제 프로젝트의 패키지 경로로 수정하세요.
 
+import android.util.Log
 import androidx.paging.PagingData
 import com.peachspot.liteum.data.db.ReviewLogs // ReviewLogs 엔티티 임포트
 import kotlinx.coroutines.flow.Flow
@@ -76,7 +77,8 @@ interface ReviewRepository {
      * @param reviewId 삭제할 리뷰의 로컬 ID
      * @return 삭제된 행의 수
      */
-    suspend fun deleteReviewByLocalId(reviewId: Long): Int
+    suspend fun deleteReviewById(feedItemId: String, reviewId: String): Boolean // 성공 여부 반환 (예시)
+
     /**
      * 특정 책(로컬 ID 기준)에 대한 모든 리뷰를 삭제합니다.
      * @param bookLogLocalId 리뷰를 삭제할 책의 로컬 ID
@@ -167,10 +169,23 @@ class ReviewRepositoryImpl(
         ).flow
     }
 
-    override suspend fun deleteReviewByLocalId(reviewId: Long): Int {
-        return reviewLogsDao.deleteReviewByLocalId(reviewId)
-    }
 
+    override suspend fun deleteReviewById(feedItemId: String, reviewId: String): Boolean {
+        return try {
+            // 로컬 DB에서 삭제 (예시)
+            val deletedRows = reviewLogsDao.deleteReviewById(reviewId) // DAO에 해당 함수 구현 필요
+
+            // API 서버에 삭제 요청 (예시)
+            // val response = myApiService.deleteReview(feedItemId, reviewId)
+
+            // 성공 조건 (예시: 로컬에서 1개 이상 삭제되었거나, API 응답이 성공인 경우)
+            deletedRows > 0 // 또는 response.isSuccessful
+        } catch (e: Exception) {
+            // 오류 로깅 등
+            Log.e("ReviewRepository", "Error deleting review", e)
+            false
+        }
+    }
 
     override suspend fun deleteAllReviewsForBook(bookLogLocalId: Long): Int {
         return reviewLogsDao.deleteAllReviewsForBook(bookLogLocalId)

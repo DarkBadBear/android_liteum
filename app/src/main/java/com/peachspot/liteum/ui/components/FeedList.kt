@@ -1,5 +1,6 @@
 package com.peachspot.liteum.ui.components // FeedList.kt가 있는 패키지
 
+import androidx.activity.result.launch
 import androidx.compose.foundation.clickable // 클릭 가능한 Modifier를 위해
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,6 +38,7 @@ import androidx.navigation.NavController
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemKey // itemKey를 위한 import
+import com.peachspot.liteum.data.model.BookReview
 import com.peachspot.liteum.data.model.FeedItem
 
 @Composable
@@ -45,7 +47,9 @@ fun FeedList(
     navController: NavController, // << NavController 파라미터 추가
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
-    onItemClick: (FeedItem?) -> Unit
+    onItemClick: (FeedItem?) -> Unit,
+    onEditClickCallback: (feedItem: FeedItem, review: BookReview?) -> Unit,
+    onDeleteClickCallback: (feedItem: FeedItem, review: BookReview?) -> Unit
 ) {
     // 로딩 완료 후 아이템이 없는지 확인하는 조건
     val showEmptyState = feedItems.loadState.refresh is LoadState.NotLoading &&
@@ -95,16 +99,25 @@ fun FeedList(
                     FeedPostItem(
                         feedItem = feedItem,
                         onItemClick = { onItemClick(feedItem) },
-                        modifier = modifier
+                        modifier = modifier,
+
+                        // modifier = Modifier, // FeedPostItem 자체에서 fillMaxWidth 등을 사용한다면 여기서 Modifier.padding 등만 전달
+                        // --- 수정된 콜백 전달 ---
+                        // FeedPostItem의 onEditClick은 (BookReview?)를 파라미터로 받는다고 가정
+                        onEditClick = { reviewFromFeedPost ->
+                            onEditClickCallback(feedItem, reviewFromFeedPost)
+                        },
+                        // FeedPostItem의 onDeleteClick은 (BookReview?)를 파라미터로 받는다고 가정
+                        onDeleteClick = { reviewFromFeedPost ->
+                            onDeleteClickCallback(feedItem, reviewFromFeedPost)
+                        }
                     )
                     HorizontalDivider(
-                        // modifier = Modifier.padding(horizontal = 16.dp) // 구분선에 좌우 패딩 추가
                         thickness = DividerDefaults.Thickness,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f) // 구분선 색상 약간 연하게
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
                     )
                 } ?: run {
-                    // (선택 사항) item이 null일 때 (예: 로딩 중인 플레이스홀더) 표시할 UI
-                    // PlaceholderFeedPostItem()
+                    // Placeholder UI
                 }
             }
 
@@ -153,52 +166,6 @@ fun FeedList(
                             )
                         }
                     }
-                }
-            }
-        }
-    }
-}
-
-// FeedPostItem, LoadingIndicator, ErrorMessageItem 컴포저블은 이 파일 내에 정의되어 있거나,
-// 다른 파일에서 import 되어야 합니다. 아래는 예시 정의입니다.
-
-@Composable
-fun FeedPostItem(
-    feedItem: FeedItem,
-    onItemClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 16.dp)
-            .clickable(onClick = onItemClick)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // 예시: 사용자 프로필 이미지 (실제로는 AsyncImage 등 사용)
-                // Box(modifier = Modifier.size(40.dp).background(Color.Gray, CircleShape))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = feedItem.userName, style = MaterialTheme.typography.titleSmall)
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            // 예시: 책 이미지 (실제로는 AsyncImage 등 사용)
-            // Box(modifier = Modifier.fillMaxWidth().height(150.dp).background(Color.LightGray))
-            Text(text = feedItem.bookTitle, style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(text = feedItem.caption, style = MaterialTheme.typography.bodyMedium, maxLines = 3) // 캡션 줄 수 제한 예시
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(text = "좋아요 ${feedItem.likes}개", style = MaterialTheme.typography.bodySmall)
-                if (feedItem.reviews.isNotEmpty()) {
-                    Text(
-                        text = "리뷰 ${feedItem.reviews.size}개",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.clickable { /* TODO: 리뷰 상세 보기 액션 */ }
-                    )
                 }
             }
         }

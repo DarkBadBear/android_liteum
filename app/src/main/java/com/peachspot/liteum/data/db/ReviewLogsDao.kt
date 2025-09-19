@@ -87,8 +87,9 @@ interface ReviewLogsDao {
      * 로컬 ID로 특정 리뷰를 삭제합니다.
      * @param id 삭제할 리뷰의 로컬 ID
      */
-    @Query("DELETE FROM book_reviews WHERE id = :id")
-    suspend fun deleteReviewByLocalId(id: Long): Int
+
+    @Query("DELETE FROM book_reviews WHERE id = :reviewId") // 실제 테이블명과 컬럼명으로 변경
+    suspend fun deleteReviewById(reviewId: String): Int // 삭제된 행의 수 반환
 
 
 

@@ -56,6 +56,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.peachspot.liteum.R // 실제 R 파일 경로로 확인 필요
+import com.peachspot.liteum.data.repositiory.BookRepository
 import com.peachspot.liteum.viewmodel.BookSearchViewModel
 import com.peachspot.liteum.viewmodel.HomeViewModel // 실제 ViewModel 경로로 확인 필요
 import java.io.File
@@ -72,6 +73,7 @@ import com.peachspot.liteum.ui.components.MyDatePickerDialog
 import com.peachspot.liteum.ui.components.ReviewSectionCard
 import com.peachspot.liteum.ui.components.SectionTitle
 import com.peachspot.liteum.ui.components.StarRatingInput
+import com.peachspot.liteum.util.createImageFileForCamera
 import com.peachspot.liteum.viewmodel.BookSearchViewModelFactory
 
 // --- 이미지 저장 유틸리티 함수 ---
@@ -106,27 +108,12 @@ fun saveImageToInternalStorage(context: Context, uri: Uri, desiredFileNamePrefix
 }
 
 
-// Context 확장 함수를 만들어 카메라 촬영용 임시 파일 생성
-fun Context.createImageFileForCamera(): File {
-    val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-    val imageFileName = "JPEG_TEMP_${timeStamp}_"
-    // 카메라 촬영용 임시 파일은 앱 외부 캐시 디렉토리에 저장 (FileProvider를 통해 접근)
-    val storageDir = File(externalCacheDir, "temp_images")
-    if (!storageDir.exists()) {
-        storageDir.mkdirs()
-    }
-    return File.createTempFile(
-        imageFileName, /* prefix */
-        ".jpg",       /* suffix */
-        storageDir    /* directory */
-    )
-}
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun ReviewScreen(
     navController: NavController,
     viewModel: HomeViewModel,
+    bookRepository: BookRepository, // <<-- BookRepository를 파라미터로 직접 받음
     modifier: Modifier = Modifier,
 ) {
     var bookTitle by remember { mutableStateOf("") }
@@ -155,8 +142,12 @@ fun ReviewScreen(
     val context = LocalContext.current
     val dateFormatter = remember { SimpleDateFormat("yyyy년 MM월 dd일", Locale.KOREAN) }
 
-    val bookSearchViewModelFactory = BookSearchViewModelFactory(viewModel)
+    val bookSearchViewModelFactory = remember(viewModel, bookRepository) { // remember의 키로도 추가
+        BookSearchViewModelFactory(viewModel, bookRepository)
+    }
     val bookSearchViewModel: BookSearchViewModel = viewModel(factory = bookSearchViewModelFactory)
+
+
     val isLoadingBooks by bookSearchViewModel.isLoading.collectAsState()
     val searchError by bookSearchViewModel.errorMessage.collectAsState()
 

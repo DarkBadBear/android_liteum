@@ -7,6 +7,8 @@ import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -45,7 +47,7 @@ import com.peachspot.liteum.data.model.BookReview // 분리된 BookReview 사용
 import com.peachspot.liteum.ui.components.AppBottomNavigationBar
 import com.peachspot.liteum.ui.components.BookGridFeed
 import com.peachspot.liteum.ui.components.FeedList
-import com.peachspot.liteum.ui.components.TopAppBar
+import com.peachspot.liteum.ui.components.TopAppBar // TopAppBar import 이름 변경
 import com.peachspot.liteum.ui.components.NotificationItem
 import com.peachspot.liteum.viewmodel.HomeViewModel
 import com.peachspot.liteum.viewmodel.NotificationViewModel
@@ -63,17 +65,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Menu // 예시 아이콘
+// import androidx.compose.material.icons.filled.Menu // 예시 아이콘 - 이미 위에서 import 됨
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ExperimentalMaterial3Api // 추가
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.HorizontalDivider // 이미 위에서 import 됨
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar // TopAppBar import
+// import androidx.compose.material3.TopAppBar // TopAppBar import - 이미 위에서 import 됨
 import androidx.compose.material3.TopAppBarDefaults // TopAppBarDefaults import
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue // getValue, mutableStateOf, remember, setValue 추가
@@ -83,12 +85,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp // dp import
+// import androidx.compose.ui.unit.dp // dp import - 이미 위에서 import 됨
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.compose.rememberNavController // rememberNavController는 이미 있었음
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.peachspot.liteum.ui.components.AppBottomNavigationBar
+// import com.peachspot.liteum.ui.components.AppBottomNavigationBar // 이미 위에서 import 됨
 import com.peachspot.liteum.ui.components.ReviewPreviewDialog
 
 
@@ -115,7 +117,8 @@ enum class ViewMode {
     LIST, GRID
 }
 
-enum class PreviewViewMode { LIST, GRID } // Preview용으로 간단히 정의하거나 실제 ViewMode import
+// Preview용 enum은 별도 파일 또는 삭제 가능
+// enum class PreviewViewMode { LIST, GRID }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -126,7 +129,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
 ) {
 
-    var currentViewMode by remember { mutableStateOf(ViewMode.LIST) } // 기본값은 리스트 뷰
+    var currentViewMode by remember { mutableStateOf(ViewMode.LIST) }
 
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -134,66 +137,52 @@ fun HomeScreen(
     val rightDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var expanded by remember { mutableStateOf(false) } // 계정 관리 드롭다운용
-    var showFeedItemDialog by remember { mutableStateOf(false) }
+    var showFeedItemDialog by remember { mutableStateOf(false) } // ReviewPreviewDialog 표시 여부
     val context = LocalContext.current
     val application = LocalContext.current.applicationContext as Application
     val notificationViewModel: NotificationViewModel = viewModel(
         factory = NotificationViewModelFactory(application)
     )
     val notifications by notificationViewModel.notifications.collectAsState()
-    var selectedBottomNavItem by remember { mutableStateOf(BottomNavItem.Home) } // BottomNavItem 사용
+    var selectedBottomNavItem by remember { mutableStateOf(BottomNavItem.Home) }
 
 
-    // LazyColumn의 스크롤 상태를 위한 State
     val listState = rememberLazyListState()
-
-    // 하단 바 표시 여부를 위한 State
     var isBottomBarVisible by remember { mutableStateOf(true) }
-
-    // 이전 스크롤 오프셋을 저장하기 위한 변수 (스크롤 방향 감지용)
     var previousScrollOffset by remember { mutableStateOf(0) }
-
-    // 스크롤 위치를 기반으로 하단 바 표시 여부 결정
-    // derivedStateOf를 사용하면 listState.firstVisibleItemScrollOffset이 변경될 때만 재계산됩니다.
 
     val shouldShowBottomBar by remember {
         derivedStateOf {
-            // 가장 간단한 방법: 첫 아이템이 완벽히 보이면 항상 표시
-            // 또는 스크롤이 멈췄을 때 표시 등 다양한 로직 구현 가능
-            // 여기서는 스크롤 방향에 따라 결정하는 로직을 추가합니다.
             val currentOffset = listState.firstVisibleItemScrollOffset
             val firstVisibleItemIndex = listState.firstVisibleItemIndex
-
-            // 첫 아이템이 보이거나, 스크롤을 위로 올렸을 때
             if (firstVisibleItemIndex == 0 && currentOffset == 0) {
-                true // 맨 위에서는 항상 표시
+                true
             } else if (currentOffset > previousScrollOffset) {
-                false // 아래로 스크롤 중이면 숨김
+                false
             } else if (currentOffset < previousScrollOffset) {
-                true // 위로 스크롤 중이면 표시
+                true
             } else {
-
-                isBottomBarVisible // 스크롤이 멈췄으면 이전 상태 유지 (또는 true로 설정)
+                isBottomBarVisible
             }
         }
     }
 
-  var  selectedFeedItemForDialog by remember { mutableStateOf<FeedItem?>(null) }
-    var reviewForDialog by remember { mutableStateOf<BookReview?>(null) } // 다이얼로그에 표시할 특정 리뷰
+    // ReviewPreviewDialog를 위한 상태
+    var selectedFeedItemForDialog by remember { mutableStateOf<FeedItem?>(null) }
+    var reviewForDialog by remember { mutableStateOf<BookReview?>(null) }
 
-    // 다이얼로그를 띄우는 공통 함수
     fun openDialogWithFeedItem(feedItem: FeedItem, specificReview: BookReview?) {
         selectedFeedItemForDialog = feedItem
-        reviewForDialog = specificReview // 특정 리뷰가 있으면 사용, 없으면 null
+        reviewForDialog = specificReview
         showFeedItemDialog = true
     }
 
-    // 다이얼로그를 띄우는 함수 (리뷰가 필수인 경우, 없으면 Snackbar)
     fun openDialogRequiringReview(feedItem: FeedItem) {
-        val targetReview = feedItem.reviews.firstOrNull() // 예시: 첫 번째 리뷰를 대상으로 함
+        val targetReview = feedItem.reviews.firstOrNull()
         if (targetReview != null) {
             openDialogWithFeedItem(feedItem, targetReview)
         } else {
+            // ReviewPreviewDialog를 띄우지 않고 Snackbar만 표시
             scope.launch {
                 snackbarHostState.showSnackbar(
                     message = "${feedItem.bookTitle}에는 표시할 리뷰가 없습니다.",
@@ -203,13 +192,11 @@ fun HomeScreen(
         }
     }
 
-    // shouldShowBottomBar 값이 변경될 때 isBottomBarVisible 상태를 업데이트
-    // 그리고 previousScrollOffset 업데이트
     LaunchedEffect(shouldShowBottomBar, listState.firstVisibleItemScrollOffset) {
-        Log.d("ScrollDebug", "Effect triggered. shouldShow: $shouldShowBottomBar, currentOffset: ${listState.firstVisibleItemScrollOffset}, prevOffset: $previousScrollOffset")
+        // Log.d("ScrollDebug", "Effect triggered. shouldShow: $shouldShowBottomBar, currentOffset: ${listState.firstVisibleItemScrollOffset}, prevOffset: $previousScrollOffset")
         isBottomBarVisible = shouldShowBottomBar
         previousScrollOffset = listState.firstVisibleItemScrollOffset
-        Log.d("ScrollDebug", "isBottomBarVisible set to: $isBottomBarVisible, previousScrollOffset set to: $previousScrollOffset")
+        // Log.d("ScrollDebug", "isBottomBarVisible set to: $isBottomBarVisible, previousScrollOffset set to: $previousScrollOffset")
     }
 
     LaunchedEffect(uiState.userMessage) {
@@ -261,12 +248,7 @@ fun HomeScreen(
             )
             Spacer(Modifier.height(16.dp))
             Text(uiState.userName ?: "사용자 이름", style = MaterialTheme.typography.titleMedium,color=MaterialTheme.colorScheme.primary)
-
-
             Spacer(Modifier.height(24.dp))
-
-            Spacer(Modifier.height(24.dp))
-
             Button(
                 onClick = {
                     scope.launch {
@@ -279,9 +261,8 @@ fun HomeScreen(
                     containerColor = Color(0xFFefefef),
                     contentColor = Color.Black
                 ),
-                modifier = Modifier.width(200.dp) // 원하는 너비로 설정
+                modifier = Modifier.width(200.dp)
             ) { Text("웹사이트") }
-
             Spacer(Modifier.height(24.dp))
             Button(
                 onClick = {
@@ -294,24 +275,22 @@ fun HomeScreen(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFefefef),
                     contentColor = Color.Black
-                ),  modifier = Modifier.width(200.dp) // 원하는 너비로 설정
+                ),  modifier = Modifier.width(200.dp)
             ) { Text("개인정보취급방침") }
-
             Spacer(Modifier.height(24.dp))
             Button(
                 onClick = {
                     scope.launch {
                         leftDrawerState.close()
-                        viewModel.logOut() // <- 상태 변경만 수행
+                        viewModel.logOut()
                     }
                 },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFefefef),
                     contentColor = Color.Black
                 ),
-                modifier = Modifier.width(200.dp) // 원하는 너비로 설정
+                modifier = Modifier.width(200.dp)
             ) { Text("로그아웃") }
-
             Spacer(Modifier.height(24.dp))
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -321,13 +300,12 @@ fun HomeScreen(
                             containerColor = Color(0xFFefefef),
                             contentColor = Color.Black
                         ),
-                        modifier = Modifier.width(200.dp) // 원하는 너비로 설정
+                        modifier = Modifier.width(200.dp)
                     ) { Text("계정 관리") }
-
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         DropdownMenuItem(text = { Text("계정 삭제") }, onClick = {
                             expanded = false
-                            // 계정 삭제 처리
+                            // TODO: 계정 삭제 처리 로직
                         })
                     }
                 }
@@ -365,7 +343,7 @@ fun HomeScreen(
                     }
                 }
             }
-            Divider()
+            HorizontalDivider() // Material3의 Divider로 변경
             if (notifications.isEmpty()) {
                 Box(Modifier
                     .fillMaxSize()
@@ -379,7 +357,7 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(notifications, key = { it.id }) { notification ->
-                        NotificationItem(notification = notification) // 분리된 컴포저블 사용
+                        NotificationItem(notification = notification)
                     }
                 }
             }
@@ -400,13 +378,13 @@ fun HomeScreen(
                 containerColor = MaterialTheme.colorScheme.background,
                 snackbarHost = { SnackbarHost(snackbarHostState) },
                 topBar = {
-                    TopAppBar( // 분리된 컴포저블 사용
-                        currentViewMode = currentViewMode, // 현재 뷰 모드 전달
-                        onViewModeChange = { newMode -> // 뷰 모드 변경을 위한 콜백 전달
+                    com.peachspot.liteum.ui.components.TopAppBar( // 전체 경로 명시 또는 TopAppBar import 이름 변경
+                        currentViewMode = currentViewMode,
+                        onViewModeChange = { newMode ->
                             currentViewMode = newMode
                         },
                         onCameraClick = {
-                            navController.navigate("review") // 여기서 네비게이션 실행
+                            navController.navigate("review")
                         },
                         onDmClick = {
                             scope.launch {
@@ -418,32 +396,19 @@ fun HomeScreen(
                             { scope.launch { if (leftDrawerState.isClosed) leftDrawerState.open() else leftDrawerState.close() } }
                         } else null
                     )
-                         },
+                },
                 bottomBar = {
                     AnimatedVisibility(
                         visible = isBottomBarVisible,
                         enter = slideInVertically(
-                            // initialOffsetY는 컴포저블이 화면 밖에서 시작하여 안으로 들어올 때의 시작점입니다.
-                            // 양수 값은 컴포저블의 아래쪽을 의미합니다.
-                            // 따라서, 컴포저블 높이만큼 아래에서 시작하면 완전히 화면 밖에 있게 됩니다.
-                            // 절반만 움직이게 하려면, 컴포저블 높이의 절반만큼만 오프셋을 줍니다.
-                            initialOffsetY = { fullHeight -> fullHeight }, // 시작: 완전히 화면 아래
-                            animationSpec = tween(
-                                durationMillis = 300, // 애니메이션 지속 시간 (밀리초)
-                                easing = androidx.compose.animation.core.FastOutSlowInEasing // 부드러운 가속/감속
-                            )
+                            initialOffsetY = { fullHeight -> fullHeight },
+                            animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
                         ),
                         exit = slideOutVertically(
-                            // targetOffsetY는 컴포저블이 화면 안에서 밖으로 나갈 때의 목표점입니다.
-                            // 양수 값은 컴포저블의 아래쪽을 의미합니다.
-                            targetOffsetY = { fullHeight -> fullHeight }, // 종료: 완전히 화면 아래
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = androidx.compose.animation.core.FastOutLinearInEasing // 사라질 때는 약간 더 빠르게
-                            )
+                            targetOffsetY = { fullHeight -> fullHeight },
+                            animationSpec = tween(durationMillis = 300, easing = FastOutLinearInEasing)
                         )
                     ) {
-                        // 이 AppBottomNavigationBar가 차지하는 높이가 fullHeight가 됩니다.
                         AppBottomNavigationBar(
                             selectedItem = selectedBottomNavItem,
                             onItemSelected = { item ->
@@ -453,63 +418,68 @@ fun HomeScreen(
                         )
                     }
                 }
-
             ) { innerPadding ->
-                // --- 샘플 피드 데이터 ---
-//                val feedItems = remember {
-//                    listOf(
-//                        FeedItem(
-//                            "1", "peachspot", "https://picsum.photos/seed/peachspot/100/100",
-//                            "https://picsum.photos/seed/book_cover1/600/800",
-//                            "멋진 하루를 만드는 작은 습관",
-//                            "첫 번째 게시물입니다! 이 책 정말 좋아요. #일상 #책추천", 120, 15,
-//                            System.currentTimeMillis() - 100000,
-//                            reviews = listOf(
-//                                BookReview("1", "1234","독서광1", "정말 감명 깊게 읽었습니다. 삶의 태도를 바꾸는 계기가 되었어요.", 4.5f,""),
-//
-//                            )
-//                        ),
-//                        FeedItem(
-//                            "2", "tester_01", null,
-//                            "https://picsum.photos/seed/book_cover2/600/700",
-//                            "코딩의 정석: 파이썬 기초",
-//                            "파이썬 입문용으로 최고! #코딩 #개발", 250, 30,
-//                            System.currentTimeMillis() - 200000,
-//                            reviews = listOf(
-//                                BookReview("1","123", "개발자지망생", "쉽고 재미있게 설명해줘서 좋았습니다. 추천!", 5.0f,"")
-//                            )
-//                        ),
-//                        FeedItem(
-//                            "3", "android_dev", "https://picsum.photos/seed/android/100/100",
-//                            "https://picsum.photos/seed/book_cover3/600/750",
-//                            "안드로이드 앱 개발 완벽 가이드",
-//                            "새로운 기능을 개발 중입니다. 이 책 참고하고 있어요! #개발 #안드로이드", 88, 12,
-//                            System.currentTimeMillis() - 300000,
-//                            reviews = emptyList()
-//                        )
-//                    )
-//                }
-
                 val feedItems: LazyPagingItems<FeedItem> = feedViewModel.feedItemsPager.collectAsLazyPagingItems()
-
-
 
                 when (currentViewMode) {
                     ViewMode.LIST -> {
                         FeedList(
                             feedItems = feedItems,
-                            navController ,
+                            navController = navController,
                             modifier = Modifier.padding(innerPadding).fillMaxSize(),
                             listState = listState,
-                            onItemClick = { clickedFeedItemNullable -> // 파라미터가 FeedItem? 임을 명시
-                                // 여기서 null 체크 후 non-null 타입으로 openDialogRequiringReview 호출
+                            onItemClick = { clickedFeedItemNullable ->
                                 clickedFeedItemNullable?.let { nonNullFeedItem ->
                                     openDialogRequiringReview(nonNullFeedItem)
                                 }
-                                // 또는, null일 경우 아무것도 안 하거나 다른 처리를 할 수 있음
-                                // if (clickedFeedItemNullable != null) {
-                                //     openDialogRequiringReview(clickedFeedItemNullable)
-                                // }
+                            },
+                            // --- 수정된 콜백 ---
+                            // HomeScreen.kt 내부의 FeedList 호출 부분
+
+                            onEditClickCallback = editCallback@{ actualFeedItem, actualReview -> // "editCallback@" 레이블 추가
+                                if (showFeedItemDialog && selectedFeedItemForDialog == actualFeedItem && reviewForDialog == actualReview) {
+                                    showFeedItemDialog = false
+                                    selectedFeedItemForDialog = null
+                                    reviewForDialog = null
+                                }
+
+                                val targetBookLogId = actualFeedItem.id
+
+                                if (targetBookLogId.isNullOrEmpty()) {
+                                    Log.e("HomeScreen", "Cannot navigate to edit: targetBookLogId is invalid for FeedItem: ${actualFeedItem.bookTitle}")
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("리뷰를 수정/작성할 수 없는 항목입니다.")
+                                    }
+                                    // --- 수정된 return 문 ---
+                                    return@editCallback // 명시적 레이블 사용
+                                }
+
+                                val route = "review_edit/$targetBookLogId"
+                                Log.d("HomeScreen", "Navigating to: $route (Review exists: ${actualReview != null})")
+                                navController.navigate(route)
+                            },
+
+                            onDeleteClickCallback = { actualFeedItem, actualReview ->
+                                // `showFeedItemDialog = false`는 Dialog 자체의 onDismissRequest에서 처리하는 것이 일반적입니다.
+
+                                if (actualReview != null) {
+                                    // ReviewPreviewDialog가 해당 아이템/리뷰로 열려 있었다면 닫기
+                                    if (showFeedItemDialog && selectedFeedItemForDialog == actualFeedItem && reviewForDialog == actualReview) {
+                                        showFeedItemDialog = false
+                                        selectedFeedItemForDialog = null
+                                        reviewForDialog = null
+                                    }
+                                    viewModel.deleteReview(actualFeedItem.id, actualReview.id)
+                                    Log.d("HomeScreen", "Delete for FeedID ${actualFeedItem.id}, ReviewID ${actualReview.id}")
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("리뷰가 삭제되었습니다.")
+                                    }
+                                } else {
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("${actualFeedItem.bookTitle}에는 삭제할 리뷰가 없습니다.")
+                                    }
+                                    Log.d("HomeScreen", "Delete failed: No review for FeedID ${actualFeedItem.id}")
+                                }
                             }
                         )
                     }
@@ -517,16 +487,15 @@ fun HomeScreen(
                         BookGridFeed(
                             feedItems = feedItems,
                             modifier = Modifier.padding(innerPadding).fillMaxSize(),
-                            onItemClick = { clickedFeedItemNullable -> // 파라미터가 FeedItem? 임을 명시
-                                // 여기서 null 체크 후 non-null 타입으로 openDialogRequiringReview 호출
+                            onItemClick = { clickedFeedItemNullable ->
                                 clickedFeedItemNullable?.let { nonNullFeedItem ->
                                     openDialogRequiringReview(nonNullFeedItem)
                                 }
                             }
+                            // TODO: BookGridFeed에도 수정/삭제 콜백이 필요하다면 유사하게 추가
                         )
                     }
                 }
-
 
                 // --- 공통으로 사용할 다이얼로그 ---
                 if (showFeedItemDialog && selectedFeedItemForDialog != null && reviewForDialog != null) {
@@ -535,38 +504,54 @@ fun HomeScreen(
                         review = reviewForDialog!!,
                         onDismissRequest = {
                             showFeedItemDialog = false
-                            // 상태 초기화
                             selectedFeedItemForDialog = null
                             reviewForDialog = null
                         },
                         onEditClick = {
-                            showFeedItemDialog = false
+                            // 이 다이얼로그의 수정 버튼은 ReviewPreviewDialog 자체의 상태를 사용
+                            val currentReview = reviewForDialog
+                            val currentFeedItem = selectedFeedItemForDialog
 
-                            reviewForDialog?.let { review ->
+                            showFeedItemDialog = false
+                            selectedFeedItemForDialog = null
+                            reviewForDialog = null
+
+                            currentReview?.let { review ->
                                 navController.navigate("review_edit/${review.id}")
                             }
-                            selectedFeedItemForDialog = null
-                            reviewForDialog = null
+                            Log.d("ReviewPreviewDialog", "Edit clicked for ReviewID ${currentReview?.id} in FeedID ${currentFeedItem?.id}")
                         },
                         onDeleteClick = {
+                            // 이 다이얼로그의 삭제 버튼은 ReviewPreviewDialog 자체의 상태를 사용
+                            val currentReview = reviewForDialog
+                            val currentFeedItem = selectedFeedItemForDialog
+
                             showFeedItemDialog = false
-                            // viewModel.deleteReview(selectedFeedItemForDialog!!.id, reviewForDialog!!.id) // ViewModel 호출
-                            println("삭제 요청 (Dialog): Feed ID - ${selectedFeedItemForDialog!!.id}, Review ID - ${reviewForDialog!!.id}")
-                            scope.launch {
-                                snackbarHostState.showSnackbar("리뷰가 삭제되었습니다. (ViewModel 연동 필요)")
-                            }
                             selectedFeedItemForDialog = null
                             reviewForDialog = null
+
+                            if (currentFeedItem != null && currentReview != null) {
+                                viewModel.deleteReview(currentFeedItem.id, currentReview.id)
+                                Log.d("ReviewPreviewDialog", "Delete clicked for ReviewID ${currentReview.id} in FeedID ${currentFeedItem.id}")
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("리뷰가 삭제되었습니다.")
+                                }
+                            }
                         }
                     )
                 } else if (showFeedItemDialog && selectedFeedItemForDialog != null && reviewForDialog == null) {
-
+                    // 이 경우는 openDialogRequiringReview에서 Snackbar를 이미 표시하므로,
+                    // 추가적인 LaunchedEffect는 중복될 수 있음.
+                    // Dialog를 띄우지 않고 Snackbar만 표시하는 것이 openDialogRequiringReview의 역할임.
+                    // 만약 그래도 Dialog를 띄우고 싶다면, openDialogRequiringReview 로직 수정 필요.
+                    // 여기서는 showFeedItemDialog가 true로 설정되지 않도록 하는 것이 더 일관적일 수 있음.
+                    // 현재는 showFeedItemDialog가 true로 설정되지 않으므로 이 LaunchedEffect는 실행되지 않을 가능성이 높음.
                     LaunchedEffect(selectedFeedItemForDialog) {
-                        if(showFeedItemDialog) { // 다이얼로그를 닫기 전에 Snackbar 표시
+                        if(showFeedItemDialog) { // 실제로 이 조건이 true가 될 가능성은 낮음
                             scope.launch {
-                                snackbarHostState.showSnackbar("${selectedFeedItemForDialog?.bookTitle}에는 표시할 리뷰가 없습니다.")
+                                snackbarHostState.showSnackbar("${selectedFeedItemForDialog?.bookTitle}에는 표시할 리뷰가 없습니다. (Dialog LaunchedEffect)")
                             }
-                            showFeedItemDialog = false // 다이얼로그 닫기
+                            showFeedItemDialog = false
                             selectedFeedItemForDialog = null
                         }
                     }
@@ -575,5 +560,3 @@ fun HomeScreen(
         }
     }
 }
-
-

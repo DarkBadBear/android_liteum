@@ -172,3 +172,33 @@ data class ApiResponseWrapper<T>(
     val data: T // 실제 데이터 리스트, null일 수도 있음을 고려
     // 필요한 경우 다른 공통 필드 (예: status, message 등) 추가
 )
+
+
+
+// @Serializable // Kotlinx Serialization 사용 시 주석 해제
+data class BookReview(
+    @SerializedName("review_id") // JSON 키가 "review_id"인 경우
+    val id: String, // 로컬 모델과 이름이 같다면 어노테이션 불필요
+
+    @SerializedName("user_id")
+    val userId: String,
+
+    @SerializedName("book_isbn") // API 응답에 ISBN이 포함된다면
+    val bookId: String, // 또는 isbn: String, 로컬 모델과 일치시킴
+
+    @SerializedName("rating")
+    val rating: Float,
+
+    @SerializedName("content")
+    val content: String,
+
+    @SerializedName("timestamp") // 타임스탬프 형식에 따라 Long 또는 String
+    val timestamp: Long,
+
+    @SerializedName("image_url")
+    val imageUrl: String? = null, // nullable 필드
+
+    @SerializedName("likes_count")
+    val likes: Int? = 0 // nullable 필드 및 기본값
+    // ... 기타 필요한 필드들
+)

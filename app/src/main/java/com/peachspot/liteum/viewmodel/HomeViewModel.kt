@@ -7,6 +7,7 @@ import android.content.IntentSender
 import android.net.Uri
 import android.util.Base64 // 안드로이드 표준 Base64 사용
 import android.util.Log
+import androidx.compose.animation.core.copy
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
@@ -43,9 +44,12 @@ import com.peachspot.liteum.data.model.FeedItem
 import com.peachspot.liteum.data.remote.api.MyApiService
 import com.peachspot.liteum.data.remote.client.NetworkClient
 import com.peachspot.liteum.data.repositiory.BookRepository
+import com.peachspot.liteum.data.repositiory.ReviewRepository
 import com.peachspot.liteum.data.repositiory.UserPreferencesRepository
 import com.peachspot.liteum.data.repositiory.UserProfileData
+import com.peachspot.liteum.ui.screens.EditableBookReview
 import com.peachspot.liteum.util.Logger // 기존 로거 사용 (또는 android.util.Log로 통일)
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -87,7 +91,8 @@ class HomeViewModel(
     private val firebaseAuth: FirebaseAuth,
     private val credentialManager: CredentialManager,
     private val myApiService: MyApiService, // 생성자에서 직접 받음 (NetworkClient.myApiService 대신)
-    private val bookRepository: BookRepository
+    private val bookRepository: BookRepository,
+    private val reviewRepository: ReviewRepository
 ) : AndroidViewModel(application) { // AndroidViewModel 상속 시 application 자동 주입
 
     private fun formatDateToString(date: Date?): String? {
@@ -101,6 +106,74 @@ class HomeViewModel(
 
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
+
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getEditableBookReview(bookLogId: Long): Flow<EditableBookReview?> {
+        // bookLogId가 0이거나 음수이면 유효하지 않으므로 빈 Flow 또는 null Flow 반환
+        if (bookLogId <= 0L) {
+            Log.w("HomeViewModel", "getEditableBookReview called with invalid bookLogId: $bookLogId")
+            return flowOf(null) // 즉시 null을 방출하는 Flow
+        }
+
+        // 1. bookLogId를 사용하여 BookLogs를 가져오는 Flow
+        val bookLogFlow: Flow<BookLogs?> = bookRepository.getBookLogById(bookLogId)
+            .distinctUntilChanged() // 이전과 동일한 BookLogs 객체는 다시 방출하지 않음
+
+        // 2. BookLogs Flow를 기반으로 ReviewLogs를 가져오는 Flow로 전환
+        return bookLogFlow.flatMapLatest { bookLog ->
+            if (bookLog == null) {
+                // BookLog를 찾을 수 없으면 null을 가진 Flow를 반환
+                flowOf(null)
+            } else {
+                // BookLog가 있으면, 해당 BookLog의 ID로 ReviewLogs 리스트를 가져오는 Flow 생성
+                val reviewsFlow: Flow<List<ReviewLogs>> = reviewRepository.getReviewsForBook(bookLog.id)
+                    .distinctUntilChanged()
+
+                // BookLog 정보와 ReviewLogs 리스트 (의 첫 번째 항목)를 결합
+                reviewsFlow.map { reviewsList ->
+                    val firstReview = reviewsList.firstOrNull()
+                    EditableBookReview(
+                        bookLog = bookLog,
+                        reviewText = firstReview?.reviewText,
+                        shareSetting = firstReview?.share // 또는 기본값 (예: firstReview?.share ?: "private")
+                    )
+                }
+            }
+        }
+        // UI에서 Lifecycle을 고려하여 수집할 때 캐싱 및 공유를 위해 stateIn을 사용할 수도 있습니다.
+        // 하지만 Composable에서 remember + collectAsStateWithLifecycle 조합을 사용한다면
+        // ViewModel에서 stateIn을 반드시 할 필요는 없을 수 있습니다.
+        // .stateIn(
+        //     scope = viewModelScope,
+        //     started = SharingStarted.WhileSubscribed(5000), // 5초 동안 구독자가 없으면 Flow 중지
+        //     initialValue = null // 초기값 (로딩 상태 등을 나타내기 위함)
+        // )
+    }
+
+
+    fun deleteReview(feedItemId: String, reviewId: String) {
+        viewModelScope.launch {
+            try {
+                // reviewRepository를 통해 실제 삭제 로직 호출
+                // deleteReviewById는 ReviewRepository에 정의해야 하는 함수입니다.
+                val success = reviewRepository.deleteReviewById(feedItemId, reviewId) // 또는 reviewId만으로 충분할 수 있음
+
+                if (success) {
+
+                    _uiState.update { it.copy(userMessage = "리뷰가 삭제되었습니다.", userMessageType = "success") }
+
+
+                } else {
+                    _uiState.update { it.copy(userMessage = "리뷰가 삭제 실패", userMessageType = "error") }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(userMessage = "기타 오류가 발생하였습니다.", userMessageType = "error") }
+                // TODO: 오류 처리 로직
+            }
+        }
+    }
+
 
     fun saveBookAndReview(
         bookTitle: String,
@@ -748,21 +821,176 @@ class HomeViewModel(
         return bookRepository.getBookLogById(id)
     }
 
-    fun updateBookLog(bookLog: BookLogs) {
+// HomeViewModel.kt (또는 해당 ViewModel)
+
+    // HomeViewModel.kt
+
+
+    /**
+     * 독서 기록(BookLogs)과 연결된 리뷰(ReviewLogs)를 업데이트하거나 새로 생성합니다.
+     *
+     * @param updatedBookLog 업데이트될 BookLogs 객체.
+     *                       coverImageUri에는 앱 내부 저장소의 새 이미지 경로/URI가 포함되어야 합니다.
+     * @param newReviewText 업데이트되거나 새로 생성될 리뷰의 텍스트.
+     * @param newShareSetting 리뷰의 공유 설정 값.
+     */
+    fun updateBookLogAndReview(
+        updatedBookLog: BookLogs,
+        newReviewText: String,
+        newShareSetting: String
+    ) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, userMessage = null) }
+
+            val currentMemberId: String? = if (_uiState.value.isUserLoggedIn) {
+                _uiState.value.firebaseUid ?: _uiState.value.kakaoUid // 로그인 방식에 따라 주 사용자 ID 선택
+            } else {
+                null
+            }
+
+            if (currentMemberId.isNullOrBlank()) {
+                Log.e("HomeViewModel", "User is not logged in. Cannot update book log and review.")
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        userMessage = "로그인이 필요합니다. 다시 로그인해주세요.",
+                        userMessageType = "error"
+                    )
+                }
+                return@launch
+            }
+
+            // BookLog의 member_id가 현재 사용자의 ID와 일치하는지 확인
+            if (updatedBookLog.member_id != currentMemberId) {
+                Log.e("HomeViewModel", "User ID mismatch. User '$currentMemberId' trying to update bookLog of '${updatedBookLog.member_id}'.")
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        userMessage = "자신의 독서 기록만 수정할 수 있습니다.",
+                        userMessageType = "error"
+                    )
+                }
+                return@launch
+            }
+
             try {
-                val result = bookRepository.updateBookLog(bookLog)
-                if (result > 0) {
-                    Log.d("HomeViewModel", "BookLog updated successfully. ID: ${bookLog.id}")
-                    // TODO: UI 업데이트 (예: _uiState.update { it.copy(userMessage = "업데이트 완료") })
+                // --- 1. BookLogs 업데이트 ---
+                // updatedBookLog 객체는 호출부(EditReviewScreen)에서 이미 모든 변경사항
+                // (텍스트 필드, 이미지 URI, 평점 등)을 담고 있다고 가정합니다.
+                // BookLogs 엔티티에 updatedAtMillis 필드가 있고, 자동 업데이트되지 않는다면 여기서 설정:
+                // val bookLogToUpdate = updatedBookLog.copy(updatedAtMillis = System.currentTimeMillis())
+                val bookLogToUpdate = updatedBookLog // 현재는 BookLogs에 updatedAtMillis가 없다고 가정
+
+                val updatedBookLogRows = bookRepository.updateBookLog(bookLogToUpdate)
+
+                if (updatedBookLogRows > 0) {
+                    Log.d("HomeViewModel", "BookLog (ID: ${bookLogToUpdate.id}) updated successfully. Rows affected: $updatedBookLogRows")
+
+                    // BookLog ID 유효성 검사 (일반적으로 0L 이하는 유효하지 않은 ID)
+                    if (bookLogToUpdate.id <= 0L) {
+                        Log.e("HomeViewModel", "Invalid BookLog ID (${bookLogToUpdate.id}) after update. Cannot proceed with review.")
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                userMessage = "독서 기록 수정은 성공했으나, 리뷰 연동에 문제가 발생했습니다 (잘못된 책 ID).",
+                                userMessageType = "warning"
+                            )
+                        }
+                        return@launch
+                    }
+
+                    // --- 2. 연결된 ReviewLog 업데이트 또는 생성 ---
+                    // ReviewRepository의 getReviewsForBook는 List<ReviewLogs>를 반환.
+                    // 이 예제에서는 해당 책의 첫 번째 리뷰를 대상으로 하거나, 없으면 새로 생성.
+                    val existingReviewsFlow = reviewRepository.getReviewsForBook(bookLogToUpdate.id)
+                    val existingReviewLog = existingReviewsFlow.firstOrNull()?.firstOrNull() // Flow<List<T>> -> List<T>? -> T?
+
+                    if (existingReviewLog != null) {
+                        // 기존 리뷰 업데이트
+                        // ReviewRepositoryImpl에서 updatedAtMillis를 자동 처리하므로 ViewModel에서 신경쓰지 않음.
+                        val reviewLogToUpdate = existingReviewLog.copy(
+                            reviewText = newReviewText,
+                            share = newShareSetting
+                            // memberId는 기존 리뷰의 것을 유지 (또는 currentMemberId로 강제할 수도 있음)
+                        )
+                        val updatedReviewLogRows = reviewRepository.updateReview(reviewLogToUpdate)
+
+                        if (updatedReviewLogRows > 0) {
+                            Log.d("HomeViewModel", "ReviewLog (ID: ${reviewLogToUpdate.id}) updated successfully for BookLog ID: ${bookLogToUpdate.id}")
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    userMessage = "독서 기록과 리뷰가 성공적으로 수정되었습니다.",
+                                    userMessageType = "success"
+                                )
+                            }
+                        } else {
+                            Log.w("HomeViewModel", "ReviewLog update failed or no changes for BookLog ID: ${bookLogToUpdate.id}. Review ID: ${existingReviewLog.id}")
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    userMessage = "독서 기록은 수정되었으나, 리뷰 내용 변경에 실패했거나 변경사항이 없습니다.",
+                                    userMessageType = "warning"
+                                )
+                            }
+                        }
+                    } else {
+                        // 연결된 리뷰가 없는 경우 새로 생성
+                        Log.i("HomeViewModel", "No existing ReviewLog found for BookLog ID: ${bookLogToUpdate.id}. Creating a new one.")
+                        val newReview = ReviewLogs(
+                            // id는 Room에 의해 자동 생성되므로 0L 또는 기본값으로 설정
+                            id = 0L, // Room이 새 ID를 생성하도록 함
+                            bookLogLocalId = bookLogToUpdate.id,
+                            memberId = currentMemberId, // 현재 로그인한 사용자 ID로 설정
+                            reviewText = newReviewText,
+                            share = newShareSetting
+                            // createdAtMillis, updatedAtMillis는 ReviewRepositoryImpl의 addReview에서 자동 처리
+                        )
+                        val newReviewId = reviewRepository.addReview(newReview)
+
+                        if (newReviewId > 0L) {
+                            Log.d("HomeViewModel", "New ReviewLog created with ID: $newReviewId for BookLog ID: ${bookLogToUpdate.id}")
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    userMessage = "독서 기록 수정 및 새 리뷰가 성공적으로 저장되었습니다.",
+                                    userMessageType = "success"
+                                )
+                            }
+                        } else {
+                            Log.e("HomeViewModel", "Failed to create new ReviewLog for BookLog ID: ${bookLogToUpdate.id}. Returned ID: $newReviewId")
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    userMessage = "독서 기록은 수정되었으나, 새 리뷰 저장에 실패했습니다.",
+                                    userMessageType = "error"
+                                )
+                            }
+                        }
+                    }
                 } else {
-                    Log.w("HomeViewModel", "BookLog update failed - no matching ID or no change. ID: ${bookLog.id}")
-                    // _uiState.update { it.copy(userMessage = "업데이트 실패", userMessageType = "error") }
+                    Log.e("HomeViewModel", "BookLog (ID: ${bookLogToUpdate.id}) update failed. No rows affected.")
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            userMessage = "독서 기록 수정에 실패했습니다. 다시 시도해주세요.",
+                            userMessageType = "error"
+                        )
+                    }
                 }
             } catch (e: Exception) {
-                Log.e("HomeViewModel", "Error updating BookLog. ID: ${bookLog.id}", e)
-                // _uiState.update { it.copy(userMessage = "업데이트 중 오류: ${e.message}", userMessageType = "error") }
+                Log.e("HomeViewModel", "Exception while updating book log and review for BookLog ID: ${updatedBookLog.id}", e)
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        userMessage = "수정 중 오류가 발생했습니다: ${e.localizedMessage}",
+                        userMessageType = "error"
+                    )
+                }
             }
         }
     }
+
+
+
 }

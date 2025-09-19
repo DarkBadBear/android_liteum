@@ -1,5 +1,6 @@
 package com.peachspot.liteum.viewmodel
 
+import androidx.activity.result.launch
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -13,21 +14,32 @@ import com.peachspot.liteum.data.db.BookLogsDao
 import com.peachspot.liteum.data.model.FeedItem // UI 모델
 import com.peachspot.liteum.data.model.BookReview // UI 모델
 import com.peachspot.liteum.data.model.BookWithReviews
+import com.peachspot.liteum.data.model.ExternalReviewsState
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
-class FeedViewModelFactory(private val bookLogsDao: BookLogsDao) :
-    ViewModelProvider.Factory {
+
+class FeedViewModelFactory(
+    private val bookLogsDao: BookLogsDao,
+    private val bookApiService: BookApiService // 인터페이스 타입으로 받음
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(FeedViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return FeedViewModel(bookLogsDao) as T
+            return FeedViewModel(bookLogsDao, bookApiService) as T
         }
-        throw IllegalArgumentException("Unknown ViewModel class for FeedViewModel")
+        throw IllegalArgumentException("Unknown ViewModel class for FeedViewModelFactory")
     }
 }
 
-class FeedViewModel(private val bookLogsDao: BookLogsDao) : ViewModel() {
+class FeedViewModel(
+    private val bookLogsDao: BookLogsDao,
+    private val bookApiService: BookApiService // 기본값 할당 제거!
+) : ViewModel() {
 
     // BookWithReviews (DB 데이터)를 FeedItem (UI 모델)으로 변환하는 핵심 함수
     private fun mapBookWithReviewsToFeedItem(bookWithReviews: BookWithReviews): FeedItem {
@@ -64,7 +76,8 @@ class FeedViewModel(private val bookLogsDao: BookLogsDao) : ViewModel() {
             // likes 필드 추가 (임시값 또는 실제 데이터 로직 필요)
             likes = (bookLog.id % 70).toInt() + 5, // 예시: ID 기반으로 임의의 좋아요 수 생성
             timestamp = bookLog.createdAtMillis,
-            reviews = uiBookReviews
+            reviews = uiBookReviews,
+            isbn =bookLog.isbn
         )
     }
 
@@ -86,26 +99,28 @@ class FeedViewModel(private val bookLogsDao: BookLogsDao) : ViewModel() {
         }
         .cachedIn(viewModelScope) // ViewModel 스코프 내에서 페이징 데이터 캐시
 
-    // --- 아래 중복된 feedItemsPager 정의 제거 ---
-    /*
-    /**
-     * 페이징된 피드 아이템(책과 그 리뷰들)을 제공하는 Flow.
-     * 각 아이템은 FeedItem UI 모델입니다.
-     */
-    val feedItemsPager: Flow<PagingData<FeedItem>> = Pager(
-        config = PagingConfig(
-            pageSize = 10, // 한 페이지에 로드할 책(FeedItem)의 수
-            enablePlaceholders = false
-        ),
-        // DAO에서 BookWithReviews를 가져오는 페이징 메서드 사용 (이 메서드는 DAO에 정의되어 있어야 함)
-        pagingSourceFactory = { bookLogsDao.getAllBooksWithReviewsPaged() }
-    ).flow
-        .map { pagingDataBookWithReviews: PagingData<BookWithReviews> ->
-            // PagingData<BookWithReviews>를 PagingData<FeedItem>으로 변환
-            pagingDataBookWithReviews.map { bookWithReviews ->
-                mapBookWithReviewsToFeedItem(bookWithReviews) // 각 BookWithReviews를 FeedItem으로 변환
+    private val _externalReviews = MutableStateFlow<Map<String, ExternalReviewsState>>(emptyMap())
+    val externalReviews: StateFlow<Map<String, ExternalReviewsState>> = _externalReviews.asStateFlow()
+
+    fun fetchExternalReviews(feedItemId: String, isbn: String) {
+        if (_externalReviews.value[feedItemId]?.loading == true || _externalReviews.value[feedItemId]?.reviews != null) {
+            return
+        }
+
+        viewModelScope.launch {
+            _externalReviews.value = _externalReviews.value.toMutableMap().apply {
+                put(feedItemId, ExternalReviewsState(loading = true))
+            }
+            try {
+                val reviews = bookApiService.getReviewsByIsbn(isbn)
+                _externalReviews.value = _externalReviews.value.toMutableMap().apply {
+                    put(feedItemId, ExternalReviewsState(reviews = reviews))
+                }
+            } catch (e: Exception) {
+                _externalReviews.value = _externalReviews.value.toMutableMap().apply {
+                    put(feedItemId, ExternalReviewsState(error = e.message))
+                }
             }
         }
-        .cachedIn(viewModelScope) // ViewModel 스코프 내에서 페이징 데이터 캐시
-    */
+    }
 }

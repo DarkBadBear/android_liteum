@@ -62,11 +62,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 import androidx.activity.enableEdgeToEdge
+//import androidx.privacysandbox.tools.core.generator.build
 import com.kakao.sdk.common.KakaoSdk
 import com.peachspot.liteum.data.repositiory.BookRepositoryImpl
+import com.peachspot.liteum.data.repositiory.ReviewRepositoryImpl
 import com.peachspot.liteum.util.Logger
 import com.peachspot.liteum.viewmodel.FeedViewModel
 import com.peachspot.liteum.viewmodel.FeedViewModelFactory
+import retrofit2.Retrofit
 
 ///@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -173,9 +176,8 @@ class MainActivity : ComponentActivity() {
                 // HomeRepositoryImpl은 HomeViewModel에서 사용.
                 // FeedViewModel은 Dao를 직접 사용하거나 자체 Repository를 가질 수 있음.
                 // 여기서는 HomeViewModel용으로만 HomeRepositoryImpl을 생성.
-                val bookRepository = remember { BookRepositoryImpl(bookLogsDao, reviewLogsDao) }
-
-
+                val bookRepository = remember { BookRepositoryImpl(bookLogsDao, reviewLogsDao, myApiService) }
+                val reviewRepository = remember { ReviewRepositoryImpl(reviewLogsDao) } // 또는 다른 의존성이 있다면 함께 전달
 
                 // HomeViewModel 생성
                 val homeViewModelFactory = remember {
@@ -184,15 +186,20 @@ class MainActivity : ComponentActivity() {
                         userPrefs,
                         firebaseAuth, // 수정된 이름 사용
                         myApiService,
-                        bookRepository
+                        bookRepository,
+                        reviewRepository=reviewRepository
                     )
                 }
                 val homeViewModel: HomeViewModel = viewModel(factory = homeViewModelFactory)
 
-                // FeedViewModel 생성
+
+
+                // FeedViewModelFactory 생성
                 val feedViewModelFactory = remember {
-                    // FeedViewModelFactory는 BookLogsDao만 필요로 한다고 가정
-                    FeedViewModelFactory(bookLogsDao)
+                    FeedViewModelFactory(
+                        bookLogsDao,
+                        myApiService // Application에서 통합된 BookApiService (내부적으로 MyApiService 사용) 가져오기
+                    )
                 }
                 val feedViewModel: FeedViewModel = viewModel(factory = feedViewModelFactory)
 

@@ -1,7 +1,6 @@
 package com.peachspot.liteum.data.model
 
 // BookReview import 필요
-import com.peachspot.liteum.data.model.BookReview
 
 data class FeedItem(
     val id: String,
@@ -12,5 +11,6 @@ data class FeedItem(
     val caption: String,
     val likes: Int,
     val timestamp: Long,
-    val reviews: List<BookReview> = emptyList() // 해당 책의 리뷰 목록
+    val reviews: List<BookReview> = emptyList(),// 해당 책의 리뷰 목록
+    val isbn: String?
 )

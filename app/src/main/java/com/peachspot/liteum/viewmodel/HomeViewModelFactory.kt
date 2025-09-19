@@ -8,6 +8,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.peachspot.liteum.data.db.BookLogsDao
 import com.peachspot.liteum.data.remote.api.MyApiService
 import com.peachspot.liteum.data.repositiory.BookRepository
+import com.peachspot.liteum.data.repositiory.ReviewRepository
 import com.peachspot.liteum.data.repositiory.UserPreferencesRepository
 import com.peachspot.liteum.util.Logger
 
@@ -18,6 +19,7 @@ class HomeViewModelFactory(
     private val firebaseAuth: FirebaseAuth,
     private val myApiService: MyApiService,
     private val homeRepository: BookRepository,
+    private val reviewRepository: ReviewRepository
 
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
@@ -31,8 +33,7 @@ class HomeViewModelFactory(
                 credentialManager,
                 myApiService,
                 homeRepository,
-
-
+                reviewRepository=reviewRepository
             ) as T
             Logger.d("ProfileVMFactory", "ProfileViewModel instance created: $viewModel")
             return viewModel
