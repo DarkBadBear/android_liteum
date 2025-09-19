@@ -35,13 +35,15 @@ import androidx.paging.compose.itemKey
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.peachspot.liteum.data.model.FeedItem
+import com.peachspot.liteum.viewmodel.FeedViewModel
 
 @Composable
 fun BookGridFeed(
     feedItems: LazyPagingItems<FeedItem>, // << 타입 변경: List<FeedItem> -> LazyPagingItems<FeedItem>
     onItemClick: (FeedItem?) -> Unit,     // << 콜백 파라미터 타입 변경: FeedItem -> FeedItem?
     modifier: Modifier = Modifier,
-    columns: Int = 3 // 그리드 컬럼 수 (2 또는 3이 일반적)
+    columns: Int = 3 ,
+    feedViewModel: FeedViewModel
 ) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
@@ -61,7 +63,8 @@ fun BookGridFeed(
             item?.let { feedItem ->
                 BookCoverGridItem( // 이 컴포저블은 FeedItem을 표시하는 역할
                     feedItem = feedItem,
-                    onItemClick = { onItemClick(feedItem) } // null이 아닌 item 전달
+                    onItemClick = { onItemClick(feedItem) } ,// null이 아닌 item 전달
+                    feedViewModel=feedViewModel
                 )
             } ?: run {
                 // (선택 사항) item이 null일 때 (예: 로딩 중인 플레이스홀더) 표시할 UI

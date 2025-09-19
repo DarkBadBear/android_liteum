@@ -77,7 +77,7 @@ interface ReviewRepository {
      * @param reviewId 삭제할 리뷰의 로컬 ID
      * @return 삭제된 행의 수
      */
-    suspend fun deleteReviewById(feedItemId: String, reviewId: String): Boolean // 성공 여부 반환 (예시)
+    suspend fun deleteReviewById(feedItemId: Long, reviewId: Long): Boolean // 성공 여부 반환 (예시)
 
     /**
      * 특정 책(로컬 ID 기준)에 대한 모든 리뷰를 삭제합니다.
@@ -170,7 +170,7 @@ class ReviewRepositoryImpl(
     }
 
 
-    override suspend fun deleteReviewById(feedItemId: String, reviewId: String): Boolean {
+    override suspend fun deleteReviewById(feedItemId: Long, reviewId: Long): Boolean {
         return try {
             // 로컬 DB에서 삭제 (예시)
             val deletedRows = reviewLogsDao.deleteReviewById(reviewId) // DAO에 해당 함수 구현 필요

@@ -17,12 +17,14 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage // 또는 다른 이미지 로딩 라이브러리
 import coil.request.ImageRequest
 import com.peachspot.liteum.data.model.FeedItem
+import com.peachspot.liteum.viewmodel.FeedViewModel
 
 @Composable
 fun BookCoverGridItem(
     feedItem: FeedItem,
     onItemClick: () -> Unit, // 이제 FeedItem이 항상 non-null로 전달됨
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    feedViewModel: FeedViewModel
 ) {
     Card(
         onClick = onItemClick,

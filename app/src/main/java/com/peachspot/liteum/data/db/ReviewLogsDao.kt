@@ -89,7 +89,7 @@ interface ReviewLogsDao {
      */
 
     @Query("DELETE FROM book_reviews WHERE id = :reviewId") // 실제 테이블명과 컬럼명으로 변경
-    suspend fun deleteReviewById(reviewId: String): Int // 삭제된 행의 수 반환
+    suspend fun deleteReviewById(reviewId: Long): Int // 삭제된 행의 수 반환
 
 
 

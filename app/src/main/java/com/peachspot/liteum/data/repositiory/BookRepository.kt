@@ -63,10 +63,10 @@ class BookRepositoryImpl(
     private fun mapBookWithReviewsToFeedItem(bookWithReviews: BookWithReviews): FeedItem {
         val bookLog = bookWithReviews.book
         val reviewLogsList = bookWithReviews.reviews
-        val feedItemId = bookLog.id.toString()
+        val feedItemId = bookLog.id
         val uiBookReviews = reviewLogsList.map { reviewLogDb ->
             BookReview(
-                id = reviewLogDb.id.toString(),
+                id = reviewLogDb.id,
                 userId = reviewLogDb.memberId,
                 reviewerName = reviewLogDb.memberId, // 실제 사용자 이름 필드가 있다면 그것을 사용
                 reviewText = reviewLogDb.reviewText,
@@ -91,7 +91,7 @@ class BookRepositoryImpl(
 
     private fun mapBookLogOnlyToFeedItem(bookLog: BookLogs): FeedItem {
         return FeedItem(
-            id = bookLog.id.toString(),
+            id = bookLog.id,
             userName = bookLog.member_id ?: "익명",
             userProfileImageUrl = "https://picsum.photos/seed/user${bookLog.member_id?.hashCode() ?: 0}/100/100",
             bookImageUrl = bookLog.coverImageUri,

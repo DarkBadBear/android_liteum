@@ -54,7 +54,7 @@ fun FeedPostItem(
     modifier: Modifier = Modifier,
     onEditClick: (review: BookReview?) -> Unit,
     onDeleteClick: (review: BookReview?) -> Unit,
-    feedViewModel: FeedViewModel = viewModel() // ViewModel 주입
+    feedViewModel: FeedViewModel
 ){
     var showReviewDialog by remember { mutableStateOf(false) }
     val currentReview = feedItem.reviews.firstOrNull() // 예시로 첫 번째 리뷰를 사용, 실제로는 어떤 리뷰를 보여줄지 로직 필요
@@ -63,8 +63,7 @@ fun FeedPostItem(
     val scope = rememberCoroutineScope()
 
 
-    val feedItemIdentifier = feedItem.isbn ?: feedItem.id // ISBN이 없다면 ID 사용 (FeedItem에 id 필드가 있다고 가정)
-
+    val feedItemIdentifier = feedItem.isbn
     val externalReviewsState by feedViewModel.externalReviews.collectAsState()
     val currentExternalReviewState = externalReviewsState[feedItemIdentifier]
 
@@ -72,7 +71,7 @@ fun FeedPostItem(
         snapshotFlow { pagerState.settledPage }.collectLatest { page ->
             if (page == 1 && feedItem.isbn != null) {
                 Log.d("FeedPostItem", "Page 1 settled for ISBN: ${feedItem.isbn}. Fetching external reviews.")
-                feedViewModel.fetchExternalReviews(feedItemIdentifier, feedItem.isbn)
+              feedViewModel.fetchExternalReviews(feedItemIdentifier, feedItem.isbn)
             }
         }
     }
@@ -86,21 +85,6 @@ fun FeedPostItem(
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-//            AsyncImage(
-//                model = feedItem.userProfileImageUrl ?: R.drawable.default_profile_placeholder, // 플레이스홀더 리소스 필요
-//                contentDescription = "${feedItem.userName} 프로필 사진",
-//                modifier = Modifier
-//                    .size(32.dp)
-//                    .clip(CircleShape)
-//                    .background(Color.LightGray),
-//                contentScale = ContentScale.Crop
-//            )
-            //Spacer(modifier = Modifier.width(8.dp))
-//            Text(
-//                text = feedItem.userName,
-//                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-//                modifier = Modifier.weight(1f)
-//            )
             Spacer(modifier = Modifier.weight(1f))
             Box {
                 IconButton(onClick = { showMenu = true }) {
@@ -159,10 +143,6 @@ fun FeedPostItem(
                         )
                     }
                     1 -> {
-
-                        // 로컬 리뷰와 외부 서버 리뷰를 함께 표시하거나,
-                        // 외부 서버 리뷰만 표시할 수 있습니다.
-                        // 여기서는 로컬 리뷰와 외부 리뷰를 합쳐서 보여주는 예시입니다.
                         val combinedReviews = mutableListOf<BookReview>()
                         combinedReviews.addAll(feedItem.reviews) // 기존 로컬 리뷰
                         currentExternalReviewState?.reviews?.let { external ->

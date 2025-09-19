@@ -48,21 +48,3 @@ fun BookReviewItem(review: BookReview, modifier: Modifier = Modifier) {
 }
 
 // BookReviewItem.kt
-
-@Preview(showBackground = true)
-@Composable
-fun BookReviewItemPreview() {
-    MaterialTheme {
-        BookReviewItem(
-            review = BookReview(
-                id = "prev_rev_id_001",
-                userId = "user_1234", // userId 추가됨
-                reviewerName = "미리보기 리뷰어",
-                reviewText = "이것은 reviewText 필드의 내용입니다.", // reviewText에 값 전달
-                rating = 4.8f,
-                content = "이것은 content 필드의 내용입니다.",   // content에 값 전달!
-                // timestamp는 기본값이 있으므로 생략 가능
-            )
-        )
-    }
-}

@@ -419,10 +419,13 @@ fun HomeScreen(
                     }
                 }
             ) { innerPadding ->
+
+
                 val feedItems: LazyPagingItems<FeedItem> = feedViewModel.feedItemsPager.collectAsLazyPagingItems()
 
                 when (currentViewMode) {
                     ViewMode.LIST -> {
+
                         FeedList(
                             feedItems = feedItems,
                             navController = navController,
@@ -445,7 +448,7 @@ fun HomeScreen(
 
                                 val targetBookLogId = actualFeedItem.id
 
-                                if (targetBookLogId.isNullOrEmpty()) {
+                                if (targetBookLogId <= 0L) {
                                     Log.e("HomeScreen", "Cannot navigate to edit: targetBookLogId is invalid for FeedItem: ${actualFeedItem.bookTitle}")
                                     scope.launch {
                                         snackbarHostState.showSnackbar("리뷰를 수정/작성할 수 없는 항목입니다.")
@@ -460,27 +463,27 @@ fun HomeScreen(
                             },
 
                             onDeleteClickCallback = { actualFeedItem, actualReview ->
-                                // `showFeedItemDialog = false`는 Dialog 자체의 onDismissRequest에서 처리하는 것이 일반적입니다.
-
-                                if (actualReview != null) {
-                                    // ReviewPreviewDialog가 해당 아이템/리뷰로 열려 있었다면 닫기
-                                    if (showFeedItemDialog && selectedFeedItemForDialog == actualFeedItem && reviewForDialog == actualReview) {
-                                        showFeedItemDialog = false
-                                        selectedFeedItemForDialog = null
-                                        reviewForDialog = null
-                                    }
-                                    viewModel.deleteReview(actualFeedItem.id, actualReview.id)
-                                    Log.d("HomeScreen", "Delete for FeedID ${actualFeedItem.id}, ReviewID ${actualReview.id}")
+                                if (showFeedItemDialog && selectedFeedItemForDialog == actualFeedItem && reviewForDialog == actualReview) {
+                                    showFeedItemDialog = false
+                                    selectedFeedItemForDialog = null
+                                    reviewForDialog = null
+                                }
+                                val targetBookLogId = actualFeedItem.id
+                                if (actualFeedItem.id > 0L) {
+                                    viewModel.deleteBookLogWithReviews(targetBookLogId)
+                                    Log.d("HomeScreen", "Deleted FeedItem ${actualFeedItem.id} and its reviews")
                                     scope.launch {
-                                        snackbarHostState.showSnackbar("리뷰가 삭제되었습니다.")
+                                        snackbarHostState.showSnackbar("책 기록과 리뷰가 삭제되었습니다.")
                                     }
                                 } else {
                                     scope.launch {
-                                        snackbarHostState.showSnackbar("${actualFeedItem.bookTitle}에는 삭제할 리뷰가 없습니다.")
+                                        snackbarHostState.showSnackbar("삭제할 항목이 없습니다.")
                                     }
-                                    Log.d("HomeScreen", "Delete failed: No review for FeedID ${actualFeedItem.id}")
+                                    Log.d("HomeScreen", "Delete failed: invalid FeedItem ID")
                                 }
-                            }
+                            },
+
+                                    feedViewModel = feedViewModel
                         )
                     }
                     ViewMode.GRID -> {
@@ -491,8 +494,9 @@ fun HomeScreen(
                                 clickedFeedItemNullable?.let { nonNullFeedItem ->
                                     openDialogRequiringReview(nonNullFeedItem)
                                 }
-                            }
-                            // TODO: BookGridFeed에도 수정/삭제 콜백이 필요하다면 유사하게 추가
+                            },
+                            feedViewModel = feedViewModel
+
                         )
                     }
                 }

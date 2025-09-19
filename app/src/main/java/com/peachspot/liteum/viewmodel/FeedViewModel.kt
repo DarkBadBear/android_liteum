@@ -15,6 +15,7 @@ import com.peachspot.liteum.data.model.FeedItem // UI 모델
 import com.peachspot.liteum.data.model.BookReview // UI 모델
 import com.peachspot.liteum.data.model.BookWithReviews
 import com.peachspot.liteum.data.model.ExternalReviewsState
+import com.peachspot.liteum.data.remote.api.MyApiService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,12 +26,12 @@ import kotlinx.coroutines.launch
 
 class FeedViewModelFactory(
     private val bookLogsDao: BookLogsDao,
-    private val bookApiService: BookApiService // 인터페이스 타입으로 받음
+    private val myApiService: MyApiService // 인터페이스 타입으로 받음
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(FeedViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return FeedViewModel(bookLogsDao, bookApiService) as T
+            return FeedViewModel(bookLogsDao, myApiService) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class for FeedViewModelFactory")
     }
@@ -38,7 +39,7 @@ class FeedViewModelFactory(
 
 class FeedViewModel(
     private val bookLogsDao: BookLogsDao,
-    private val bookApiService: BookApiService // 기본값 할당 제거!
+    private val myApiService: MyApiService // 기본값 할당 제거!
 ) : ViewModel() {
 
     // BookWithReviews (DB 데이터)를 FeedItem (UI 모델)으로 변환하는 핵심 함수
@@ -47,13 +48,13 @@ class FeedViewModel(
         val reviewLogsList = bookWithReviews.reviews // 해당 책에 달린 모든 리뷰 (List<ReviewLogs>)
 
         // FeedItem의 ID는 이제 BookLogs의 로컬 id만 사용
-        val feedItemId = bookLog.id.toString()
+        val feedItemId = bookLog.id
 
         // DB에서 가져온 List<ReviewLogs>를 UI 모델인 List<BookReview>로 변환
         val uiBookReviews = reviewLogsList.map { reviewLogDb ->
             // ReviewLogs (DB 엔티티) -> BookReview (UI 모델) 매핑
             BookReview(
-                id = reviewLogDb.id.toString(), // ReviewLogs의 로컬 ID를 사용
+                id = reviewLogDb.id, // ReviewLogs의 로컬 ID를 사용
                 userId = reviewLogDb.memberId,
                 reviewerName = reviewLogDb.memberId, // 실제 앱에서는 사용자 프로필에서 가져오는 것을 고려
                 reviewText = reviewLogDb.reviewText,
@@ -112,7 +113,7 @@ class FeedViewModel(
                 put(feedItemId, ExternalReviewsState(loading = true))
             }
             try {
-                val reviews = bookApiService.getReviewsByIsbn(isbn)
+                val reviews = myApiService.getReviewsByIsbn(isbn)
                 _externalReviews.value = _externalReviews.value.toMutableMap().apply {
                     put(feedItemId, ExternalReviewsState(reviews = reviews))
                 }

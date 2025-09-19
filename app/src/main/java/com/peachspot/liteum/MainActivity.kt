@@ -64,9 +64,12 @@ import java.io.File
 import androidx.activity.enableEdgeToEdge
 //import androidx.privacysandbox.tools.core.generator.build
 import com.kakao.sdk.common.KakaoSdk
+import com.peachspot.liteum.data.remote.client.NetworkClient
 import com.peachspot.liteum.data.repositiory.BookRepositoryImpl
 import com.peachspot.liteum.data.repositiory.ReviewRepositoryImpl
 import com.peachspot.liteum.util.Logger
+import com.peachspot.liteum.viewmodel.BookSearchViewModel
+import com.peachspot.liteum.viewmodel.BookSearchViewModelFactory
 import com.peachspot.liteum.viewmodel.FeedViewModel
 import com.peachspot.liteum.viewmodel.FeedViewModelFactory
 import retrofit2.Retrofit
@@ -165,69 +168,76 @@ class MainActivity : ComponentActivity() {
         setContent {
             liteumiTheme {
                 val navController = rememberNavController()
-                val context = LocalContext.current.applicationContext as Application
-                val database = remember { AppDatabase.getInstance(context) }
-                val userPrefs = remember { UserPreferencesRepository(context) }
-                // firebase 변수 이름을 firebaseAuth로 변경하여 명확성 향상 (HomeViewModelFactory와 일치)
+                val currentContext = LocalContext.current // LocalContext.current 사용
+
+                val appDatabase = remember { AppDatabase.getInstance(currentContext) }
+                val bookLogsDao = remember { appDatabase.bookLogsDao() }
+                val reviewLogsDao = remember { appDatabase.reviewLogsDao() }
+
+                // UserPreferencesRepository 생성
+                val userPrefs = remember { UserPreferencesRepository(currentContext.applicationContext) }
+                // FirebaseAuth 인스턴스
                 val firebaseAuth = remember { FirebaseAuth.getInstance() }
-                val bookLogsDao = remember { database.bookLogsDao() } // BookLogsDao 인스턴스
-                val reviewLogsDao = remember { database.reviewLogsDao() } // ReviewLogsDao 인스턴스 생성
 
-                // HomeRepositoryImpl은 HomeViewModel에서 사용.
-                // FeedViewModel은 Dao를 직접 사용하거나 자체 Repository를 가질 수 있음.
-                // 여기서는 HomeViewModel용으로만 HomeRepositoryImpl을 생성.
-                val bookRepository = remember { BookRepositoryImpl(bookLogsDao, reviewLogsDao, myApiService) }
-                val reviewRepository = remember { ReviewRepositoryImpl(reviewLogsDao) } // 또는 다른 의존성이 있다면 함께 전달
+                // Repository 인스턴스 생성
+                val bookRepository = remember {
+                    BookRepositoryImpl(
+                        bookLogsDao,
+                        reviewLogsDao,
+                        NetworkClient.myApiService
+                    )
+                }
+                val reviewRepository = remember { // ReviewRepository는 MyApiService 의존성 없다고 가정
+                    ReviewRepositoryImpl(reviewLogsDao)
+                }
 
-                // HomeViewModel 생성
+                // ViewModel 생성
                 val homeViewModelFactory = remember {
                     HomeViewModelFactory(
-                        context,
+                        application, // HomeViewModelFactory가 Application Context를 받는다면
                         userPrefs,
-                        firebaseAuth, // 수정된 이름 사용
-                        myApiService,
-                        bookRepository,
-                        reviewRepository=reviewRepository
+                        firebaseAuth,
+                        NetworkClient.myApiService, // MyApiService 직접 전달
+                        bookRepository, // 생성된 bookRepository 전달
+                        reviewRepository // 생성된 reviewRepository 전달
                     )
                 }
                 val homeViewModel: HomeViewModel = viewModel(factory = homeViewModelFactory)
 
-
-
-                // FeedViewModelFactory 생성
                 val feedViewModelFactory = remember {
-                    FeedViewModelFactory(
-                        bookLogsDao,
-                        myApiService // Application에서 통합된 BookApiService (내부적으로 MyApiService 사용) 가져오기
-                    )
+                    Log.d("MainActivity", "bookLogsDao=$bookLogsDao")
+                    Log.d("MainActivity", "myApiService=$myApiService")
+                    FeedViewModelFactory(bookLogsDao, myApiService)
                 }
                 val feedViewModel: FeedViewModel = viewModel(factory = feedViewModelFactory)
 
-//                // 백그라운드에서 돌아왔을 때 웹뷰 새로고침 트리거
-//                LaunchedEffect(wasInBackground) {
-//                    if (wasInBackground) {
-//                        //homeViewModel.refreshWebViewsAfterBackground()
-//                        wasInBackground = false
-//                    }
-//                }
-
+                val bookSearchViewModelFactory = remember {
+                    BookSearchViewModelFactory(
+                        homeViewModel, // 이미 생성된 homeViewModel 전달
+                        bookRepository // 생성된 bookRepository 전달
+                    )
+                }
+                val bookSearchViewModel: BookSearchViewModel = viewModel(factory = bookSearchViewModelFactory)
 
                 MainScreen(
                     navController = navController,
                     homeViewModel = homeViewModel,
                     feedViewModel = feedViewModel,
+                    bookSearchViewModel = bookSearchViewModel, // MainScreen에 전달
+                    bookRepository = bookRepository, // MainScreen이 직접 BookRepository를 필요로 한다면 전달
+                    // myApiService = NetworkClient.myApiService, // MainScreen이 직접 MyApiService를 필요로 한다면 전달
                     onFileChooserRequest = { callback, intent ->
                         filePathCallback = callback
                         imageUri = createImageUri()
-
                         imageUri?.let { uri ->
-                            val chooserIntent = createCameraGalleryChooserIntent(this, uri)
+                            val chooserIntent = createCameraGalleryChooserIntent(this@MainActivity, uri)
                             fileChooserLauncher.launch(chooserIntent)
                         } ?: run {
                             fileChooserLauncher.launch(intent)
                         }
                     }
                 )
+
                 LaunchedEffect(Unit) {
                     if (!isNetworkAvailable()) {
                         showServiceStoppedDialogState=true

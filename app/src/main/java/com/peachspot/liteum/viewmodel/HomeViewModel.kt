@@ -151,8 +151,27 @@ class HomeViewModel(
         // )
     }
 
+    fun deleteBookLogWithReviews(bookLogId:Long) {
+        viewModelScope.launch {
+            try {
+                // 1. 리뷰들 먼저 삭제
+                val deletedReviews = reviewRepository.deleteAllReviewsForBook(bookLogId)
 
-    fun deleteReview(feedItemId: String, reviewId: String) {
+                // 2. 책 기록 삭제
+                val deletedRows = bookRepository.deleteBookLogById(bookLogId)
+                if (deletedRows > 0) {
+                    Log.d("ViewModel", "BookLog $bookLogId deleted successfully")
+                } else {
+                    Log.w("ViewModel", "BookLog $bookLogId deletion failed")
+                }
+            } catch (e: Exception) {
+                Log.e("ViewModel", "Error deleting book log with reviews", e)
+            }
+        }
+    }
+
+
+    fun deleteReview(feedItemId: Long, reviewId: Long) {
         viewModelScope.launch {
             try {
                 // reviewRepository를 통해 실제 삭제 로직 호출

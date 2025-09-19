@@ -1,5 +1,6 @@
 package com.peachspot.liteum.ui.components // FeedList.kt가 있는 패키지
 
+import android.util.Log
 import androidx.activity.result.launch
 import androidx.compose.foundation.clickable // 클릭 가능한 Modifier를 위해
 import androidx.compose.foundation.layout.Arrangement
@@ -40,6 +41,7 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemKey // itemKey를 위한 import
 import com.peachspot.liteum.data.model.BookReview
 import com.peachspot.liteum.data.model.FeedItem
+import com.peachspot.liteum.viewmodel.FeedViewModel
 
 @Composable
 fun FeedList(
@@ -49,7 +51,8 @@ fun FeedList(
     listState: LazyListState = rememberLazyListState(),
     onItemClick: (FeedItem?) -> Unit,
     onEditClickCallback: (feedItem: FeedItem, review: BookReview?) -> Unit,
-    onDeleteClickCallback: (feedItem: FeedItem, review: BookReview?) -> Unit
+    onDeleteClickCallback: (feedItem: FeedItem, review: BookReview?) -> Unit,
+    feedViewModel: FeedViewModel
 ) {
     // 로딩 완료 후 아이템이 없는지 확인하는 조건
     val showEmptyState = feedItems.loadState.refresh is LoadState.NotLoading &&
@@ -79,95 +82,97 @@ fun FeedList(
         }
 
     } else {
-        // 아이템이 있거나 로딩 중일 때 리스트 표시
-        LazyColumn(
-            modifier = modifier.fillMaxSize(), // 리스트가 전체 크기를 채우도록
-            state = listState,
-            contentPadding = PaddingValues(vertical = 0.dp) // 전체 리스트 패딩 (아이템별 패딩과 구분)
-        ) {
-            // Paging 라이브러리의 items 확장 함수 사용
-            items(
-                count = feedItems.itemCount,
-                key = feedItems.itemKey { it.id }, // 아이템 고유 키, FeedItem에 id가 String 가정
-                // contentType = { "feedPostItem" } // (선택 사항) 아이템 타입 명시
-            ) { index ->
-                val item = feedItems[index] // 아이템 가져오기 (null일 수 있음)
-                // item이 null이 아닐 때만 실제 아이템 UI를 표시
-                item?.let { feedItem ->
-                    // FeedPostItem에 필요한 콜백들 전달
-                    // FeedPostItem의 onItemClick은 이제 FeedItem 객체를 직접 받을 수 있도록 수정하는 것이 좋음
-                    FeedPostItem(
-                        feedItem = feedItem,
-                        onItemClick = { onItemClick(feedItem) },
-                        modifier = modifier,
 
-                        // modifier = Modifier, // FeedPostItem 자체에서 fillMaxWidth 등을 사용한다면 여기서 Modifier.padding 등만 전달
-                        // --- 수정된 콜백 전달 ---
-                        // FeedPostItem의 onEditClick은 (BookReview?)를 파라미터로 받는다고 가정
-                        onEditClick = { reviewFromFeedPost ->
-                            onEditClickCallback(feedItem, reviewFromFeedPost)
-                        },
-                        // FeedPostItem의 onDeleteClick은 (BookReview?)를 파라미터로 받는다고 가정
-                        onDeleteClick = { reviewFromFeedPost ->
-                            onDeleteClickCallback(feedItem, reviewFromFeedPost)
-                        }
-                    )
-                    HorizontalDivider(
-                        thickness = DividerDefaults.Thickness,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
-                    )
-                } ?: run {
-                    // Placeholder UI
+       // 아이템이 있거나 로딩 중일 때 리스트 표시
+LazyColumn(
+    modifier = modifier.fillMaxSize(), // 리스트가 전체 크기를 채우도록
+    state = listState,
+    contentPadding = PaddingValues(vertical = 0.dp)
+) {
+    items(
+        count = feedItems.itemCount,
+        key = feedItems.itemKey { it.id ?: java.util.UUID.randomUUID().toString() } // null-safe
+    ) { index ->
+        val item = feedItems[index] // null 가능
+        item?.let { feedItem ->
+            // FeedPostItem에 필요한 콜백 전달, null-safe 처리
+            FeedPostItem(
+                feedItem = feedItem,
+                onItemClick = { feedItem?.let { onItemClick(it) } },
+                modifier = modifier,
+                onEditClick = { reviewFromFeedPost ->
+                    try {
+                        onEditClickCallback(feedItem, reviewFromFeedPost)
+                    } catch (e: Exception) {
+                        Log.e("FeedList", "onEditClick error: ${e.localizedMessage}")
+                    }
+                },
+                onDeleteClick = { reviewFromFeedPost ->
+                    try {
+                        onDeleteClickCallback(feedItem, reviewFromFeedPost)
+                    } catch (e: Exception) {
+                        Log.e("FeedList", "onDeleteClick error: ${e.localizedMessage}")
+                    }
+                },
+                feedViewModel=feedViewModel
+            )
+
+            HorizontalDivider(
+                thickness = DividerDefaults.Thickness,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+            )
+        } ?: run {
+            // Placeholder UI (item이 null일 때)
+            Box(modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp)) // 예시 높이
+        }
+    }
+
+    // --- 로딩 상태 처리 (LoadState) ---
+    feedItems.loadState.apply {
+        when {
+            refresh is LoadState.Loading -> {
+                item {
+                    LoadingIndicator(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp))
                 }
             }
-
-            // --- 로딩 상태에 따른 UI 처리 ---
-            feedItems.loadState.apply {
-                when {
-                    // 초기 로드 또는 새로고침 시 로딩
-                    refresh is LoadState.Loading -> {
-                        item {
-                            LoadingIndicator(modifier = Modifier
-                                .fillMaxWidth() // 현재 아이템의 너비를 채움
-                                .padding(16.dp))
-                        }
-                    }
-                    // 목록 끝에 추가 로드 시 로딩
-                    append is LoadState.Loading -> {
-                        item {
-                            LoadingIndicator(modifier = Modifier
-                                .fillMaxWidth() // 현재 아이템의 너비를 채움
-                                .padding(16.dp))
-                        }
-                    }
-                    // 초기 로드 또는 새로고침 시 에러
-                    refresh is LoadState.Error -> {
-                        val e = refresh as LoadState.Error
-                        item {
-                            ErrorMessageItem(
-                                message = "데이터를 불러오는데 실패했어요: ${e.error.localizedMessage}",
-                                onRetry = { feedItems.retry() },
-                                modifier = Modifier
-                                    .fillParentMaxSize()
-                                    .padding(16.dp)
-                            )
-                        }
-                    }
-                    // 목록 끝에 추가 로드 시 에러
-                    append is LoadState.Error -> {
-                        val e = append as LoadState.Error
-                        item {
-                            ErrorMessageItem(
-                                message = "더 많은 데이터를 불러오는데 실패했어요: ${e.error.localizedMessage}",
-                                onRetry = { feedItems.retry() },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp)
-                            )
-                        }
-                    }
+            append is LoadState.Loading -> {
+                item {
+                    LoadingIndicator(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp))
+                }
+            }
+            refresh is LoadState.Error -> {
+                val e = refresh as LoadState.Error
+                item {
+                    ErrorMessageItem(
+                        message = e.error?.localizedMessage ?: "데이터를 불러오는데 실패했어요",
+                        onRetry = { feedItems.retry() },
+                        modifier = Modifier
+                            .fillParentMaxSize()
+                            .padding(16.dp)
+                    )
+                }
+            }
+            append is LoadState.Error -> {
+                val e = append as LoadState.Error
+                item {
+                    ErrorMessageItem(
+                        message = e.error?.localizedMessage ?: "더 많은 데이터를 불러오는데 실패했어요",
+                        onRetry = { feedItems.retry() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    )
                 }
             }
         }
+    }
+}
+
     }
 }
